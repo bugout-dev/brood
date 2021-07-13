@@ -697,7 +697,7 @@ async def get_group_handler(
     children_url: Optional[str] = None
     try:
         children_url = f"{request.url.path}/children"
-    except:
+    except Exception as e:
         pass
 
     return data.GroupResponse(
@@ -831,7 +831,7 @@ async def create_group_handler(
         )
     except exceptions.UserGroupLimitExceeded as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except:
+    except Exception as e:
         raise HTTPException(status_code=500)
 
     return data.GroupResponse(
@@ -1765,14 +1765,14 @@ async def create_application_handler(
             status_code=404,
             detail="No group with that group id or you do not have permission to view this resource",
         )
-    except:
+    except Exception as e:
         raise HTTPException(status_code=500)
 
     try:
         application = actions.create_application(
             db_session, group_id, name, description
         )
-    except:
+    except Exception as e:
         raise HTTPException(status_code=500)
 
     return data.ApplicationResponse(
@@ -1805,19 +1805,122 @@ async def get_application_handler(
             detail="Restricted tokens are not authorized to create groups.",
         )
     try:
-        application = actions.get_application(db_session, application_id)
+        application = actions.get_applications(
+            db_session, application_id=application_id
+        )[0]
 
         # Check user permissions
         actions.check_user_type_in_group(
             db_session, user_id=current_user.id, group_id=application.group_id
         )
-    except exceptions.ApplicationNotFound:
+    except exceptions.ApplicationsNotFound:
         raise HTTPException(status_code=404, detail="No application with that id")
     except actions.GroupNotFound:
         raise HTTPException(
             status_code=404, detail="You do not have permission to view this resource",
         )
-    except:
+    except Exception as e:
+        raise HTTPException(status_code=500)
+
+    return data.ApplicationResponse(
+        id=application.id,
+        group_id=application.group_id,
+        name=application.name,
+        description=application.description,
+    )
+
+
+@app.get(
+    "/applications",
+    tags=["applications"],
+    response_model=data.ApplicationsListResponse,
+)
+async def list_applications_handler(
+    token_restricted: bool = Depends(is_token_restricted),
+    group_id: uuid.UUID = Query(None),
+    current_user: models.User = Depends(get_current_user),
+    db_session=Depends(yield_db_session_from_env),
+) -> data.ApplicationsListResponse:
+    """
+    Return list of applications for group.
+
+    - **group_id** (uuid, null): Group ID
+    """
+    if token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to create groups.",
+        )
+    try:
+        if group_id is not None:
+            # Check user permissions
+            actions.check_user_type_in_group(
+                db_session, user_id=current_user.id, group_id=group_id
+            )
+            groups_ids = [group_id]
+        else:
+            groups_list = actions.get_groups_for_user(
+                db_session, user_id=current_user.id
+            )
+            groups_ids = [group.group_id for group in groups_list]
+    except actions.GroupNotFound:
+        raise HTTPException(
+            status_code=404,
+            detail="No group with that group id or you do not have permission to view this resource",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500)
+
+    try:
+        applications = actions.get_applications(db_session, groups_ids=groups_ids)
+    except exceptions.ApplicationsNotFound:
+        raise HTTPException(status_code=404, detail="There are no applications")
+    except Exception as e:
+        raise HTTPException(status_code=500)
+
+    return data.ApplicationsListResponse(
+        applications=[
+            data.ApplicationResponse(
+                id=application.id,
+                group_id=application.group_id,
+                name=application.name,
+                description=application.description,
+            )
+            for application in applications
+        ]
+    )
+
+
+@app.delete(
+    "/applications/{application_id}",
+    tags=["applications"],
+    response_model=data.ApplicationResponse,
+)
+async def delete_application_handler(
+    token_restricted: bool = Depends(is_token_restricted),
+    application_id: uuid.UUID = Path(...),
+    current_user: models.User = Depends(get_current_user),
+    db_session=Depends(yield_db_session_from_env),
+) -> data.ApplicationResponse:
+    """
+    Delete application.
+
+    - **application_id** (uuid): Application ID
+    """
+    if token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to create groups.",
+        )
+
+    try:
+        groups_list = actions.get_groups_for_user(db_session, user_id=current_user.id)
+        groups_ids = [group.group_id for group in groups_list]
+        application = actions.delete_application(db_session, application_id, groups_ids)
+    except exceptions.ApplicationsNotFound:
+        raise HTTPException(status_code=404, detail="No application with that id")
+    except Exception as e:
+        logger.error(e)
         raise HTTPException(status_code=500)
 
     return data.ApplicationResponse(

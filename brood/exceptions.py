@@ -16,7 +16,7 @@ class UnhandledException(Exception):
     """
 
 
-class ApplicationNotFound(Exception):
+class ApplicationsNotFound(Exception):
     """
     Raised when application with the given parameters is not found in the database.
     """

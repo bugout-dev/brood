@@ -268,3 +268,7 @@ class ApplicationResponse(BaseModel):
     group_id: uuid.UUID
     name: str
     description: str
+
+
+class ApplicationsListResponse(BaseModel):
+    applications: List[ApplicationResponse] = Field(default_factory=list)

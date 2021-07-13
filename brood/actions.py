@@ -1598,15 +1598,40 @@ def create_application(
     return application
 
 
-def get_application(db_session: Session, application_id: uuid.UUID) -> Application:
+def get_applications(
+    db_session: Session,
+    application_id: Optional[uuid.UUID] = None,
+    groups_ids: Optional[List[uuid.UUID]] = None,
+) -> List[Application]:
+    query = db_session.query(Application)
+
+    if application_id is not None:
+        query = query.filter(Application.id == application_id)
+    if groups_ids is not None:
+        query = query.filter(Application.group_id.in_(groups_ids))
+
+    applications = query.all()
+
+    if len(applications) == 0:
+        raise exceptions.ApplicationsNotFound("There are no applications found")
+
+    return applications
+
+
+def delete_application(
+    db_session: Session, application_id: uuid.UUID, groups_ids: List[uuid.UUID],
+) -> Application:
     application = (
         db_session.query(Application)
-        .filter(Application.id == application_id)
+        .filter(Application.id == application_id, Application.group_id.in_(groups_ids))
         .one_or_none()
     )
     if application is None:
-        raise exceptions.ApplicationNotFound(
-            f"Application not found with id: {application_id}"
+        raise exceptions.ApplicationsNotFound(
+            f"There are no application with id: {application_id}"
         )
+
+    db_session.delete(application)
+    db_session.commit()
 
     return application
