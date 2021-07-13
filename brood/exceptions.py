@@ -14,3 +14,9 @@ class UnhandledException(Exception):
     """
     Raised when unexpected behavior occurs.
     """
+
+
+class ApplicationNotFound(Exception):
+    """
+    Raised when application with the given parameters is not found in the database.
+    """

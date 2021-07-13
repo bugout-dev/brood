@@ -37,8 +37,13 @@ from brood.models import (
     Subscription,
     SubscriptionPlan,
     KVBrood,
+    Application,
 )
-from brood.resources.models import Resource, ResourcePermission, ResourceHolderPermission
+from brood.resources.models import (
+    Resource,
+    ResourcePermission,
+    ResourceHolderPermission,
+)
 
 
 def include_symbol(tablename, schema):
@@ -57,6 +62,7 @@ def include_symbol(tablename, schema):
         Resource.__tablename__,
         ResourcePermission.__tablename__,
         ResourceHolderPermission.__tablename__,
+        Application.__tablename__,
     }
 
 

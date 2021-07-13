@@ -261,3 +261,10 @@ class SubscriptionUnitsListResponse(BaseModel):
     """
 
     subscriptions: List[SubscriptionUnitsResponse] = Field(default_factory=list)
+
+
+class ApplicationResponse(BaseModel):
+    id: uuid.UUID
+    group_id: uuid.UUID
+    name: str
+    description: str
