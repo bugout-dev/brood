@@ -1,6 +1,6 @@
 from collections import defaultdict
 import logging
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 from uuid import UUID
 
 from sqlalchemy import or_
@@ -84,21 +84,16 @@ def acl_check(
 
 def create_resource(
     db_session: Session,
-    name: str,
     user_id: UUID,
-    application_id: str,
-    description: Optional[str] = None,
-    external_id: Optional[str] = None,
+    application_id: UUID,
+    resource_data: Dict[str, Any],
 ) -> models.Resource:
     """
     Create new resource and permissions for that resource.
     Also attach current user to this permissions.
     """
     resource = models.Resource(
-        name=name,
-        description=description,
-        application_id=application_id,
-        external_id=external_id,
+        application_id=application_id, resource_data=resource_data,
     )
     db_session.add(resource)
     db_session.commit()
@@ -127,9 +122,7 @@ def get_list_of_resources(
     user_id: UUID,
     user_groups_ids: List[UUID],
     admin: bool = False,
-    name: Optional[str] = None,
     application_id: Optional[str] = None,
-    external_id: Optional[str] = None,
 ) -> List[models.Resource]:
     """
     Return list of available resource to user. 
@@ -161,12 +154,8 @@ def get_list_of_resources(
             models.ResourceHolderPermission.permission_id
             == admin_resource_id_subquery.c.admin_resource_id
         )
-    if name is not None:
-        query = query.filter(models.Resource.name == name)
     if application_id is not None:
         query = query.filter(models.Resource.application_id == application_id)
-    if external_id is not None:
-        query = query.filter(models.Resource.external_id == external_id)
 
     resources = query.all()
     if len(resources) == 0:
@@ -189,42 +178,44 @@ def get_resource(db_session: Session, resource_id: UUID) -> models.Resource:
     return resource
 
 
-def update_resource(
-    db_session: Session,
-    resource_id: UUID,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    application_id: Optional[str] = None,
-    external_id: Optional[str] = None,
+def update_resource_data(
+    db_session: Session, resource_id: UUID, resource_data_new: Dict[str, Any],
 ) -> models.Resource:
     """
-    Update name, description and external for resource.
+    Update resource data.
     """
-    if (
-        name is None
-        and description is None
-        and external_id is None
-        and application_id is None
-    ):
-        raise exceptions.ResourceInvalidParameters(
-            "In order to update resource, at least one of name, "
-            "description, application_id or external_id must be specified"
-        )
-
     query = db_session.query(models.Resource).filter(models.Resource.id == resource_id)
     resource = query.one_or_none()
     if resource is None:
         raise exceptions.ResourceNotFound("Not found requested resource")
 
-    if name is not None:
-        query.update({models.Resource.name: name})
-    if description is not None:
-        query.update({models.Resource.description: description})
-    if application_id is not None:
-        query.update({models.Resource.application_id: application_id})
-    if external_id is not None:
-        query.update({models.Resource.external_id: external_id})
+    resource_data = dict(resource.resource_data)
+    for key, value in resource_data_new.items():
+        resource_data[key] = value
+    resource.resource_data = resource_data
+    db_session.commit()
 
+    return resource
+
+
+def remove_resource_data(
+    db_session: Session, resource_id: UUID, data_keys: data.ResourceDataKeyRemoveRequest
+) -> models.Resource:
+    """
+    Delete keys from resource_data column.
+    """
+    query = db_session.query(models.Resource).filter(models.Resource.id == resource_id)
+    resource = query.one_or_none()
+    if resource is None:
+        raise exceptions.ResourceNotFound("Not found requested resource")
+
+    resource_data = dict(resource.resource_data)
+    for data_key in data_keys.data_keys:
+        try:
+            del resource_data[data_key]
+        except Exception as err:
+            pass
+    resource.resource_data = resource_data
     db_session.commit()
 
     return resource

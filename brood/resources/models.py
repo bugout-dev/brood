@@ -10,10 +10,10 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from ..models import utcnow, User, Group
+from ..models import utcnow, User, Group, Application
 
 """
 Naming conventions doc
@@ -36,7 +36,6 @@ class Resource(Base):  # type: ignore
     """
 
     __tablename__ = "resources"
-    __table_args__ = (UniqueConstraint("external_id", "application_id"),)
 
     id = Column(
         UUID(as_uuid=True),
@@ -45,11 +44,12 @@ class Resource(Base):  # type: ignore
         unique=True,
         nullable=False,
     )
-    name = Column(String, nullable=False)
-    description = Column(String)
-
-    application_id = Column(String, nullable=False)
-    external_id = Column(String, nullable=True)
+    application_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(Application.id, ondelete="CASCADE"),
+        nullable=False,
+    )
+    resource_data = Column(JSONB, nullable=True)
 
     created_at = Column(
         DateTime(timezone=True), server_default=utcnow(), nullable=False

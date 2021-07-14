@@ -1,5 +1,5 @@
 import logging
-from typing import Set
+from typing import Any, Dict, List, Set
 from uuid import UUID
 
 from fastapi import (
@@ -96,10 +96,7 @@ async def version() -> VersionResponse:
 
 @app.post("/", tags=["resources"], response_model=data.ResourceResponse)
 async def create_resource_handler(
-    name: str = Form(...),
-    application_id: str = Form(...),
-    description: str = Form(None),
-    external_id: str = Form(None),
+    data: data.ResourceCreationRequest = Body(...),
     current_user: brood_models.User = Depends(get_current_user),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceResponse:
@@ -107,41 +104,28 @@ async def create_resource_handler(
     Create the resource.
     Current user will inherit all permissions to the resource.
 
-    - **name** (string): Resource name
-    - **application_id** (string): External application identifier
-    - **description** (string, null): Short description of resource
-    - **external_id** (string, null): External application meta information
+    - **data** (dict): 
+        - **application_id** (uuid)
+        - **resource_data** (dict)
     """
     try:
         resource = actions.create_resource(
             db_session=db_session,
-            name=name,
             user_id=current_user.id,
-            application_id=application_id,
-            description=description,
-            external_id=external_id,
+            application_id=data.application_id,
+            resource_data=data.resource_data,
         )
     except Exception as err:
         logger.error(f"Unhandled error in create_resource_handler: {str(err)}")
         raise HTTPException(status_code=500)
 
-    return data.ResourceResponse(
-        id=resource.id,
-        name=resource.name,
-        application_id=resource.application_id,
-        description=resource.description,
-        external_id=resource.external_id,
-        created_at=resource.created_at,
-        updated_at=resource.updated_at,
-    )
+    return resource
 
 
 @app.get("/", tags=["resources"], response_model=data.ResourcesListResponse)
 async def get_resources_list_handler(
     admin: bool = Query(False),
-    name: str = Query(None),
     application_id: str = Query(None),
-    external_id: str = Query(None),
     current_user: brood_models.User = Depends(get_current_user),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourcesListResponse:
@@ -149,9 +133,7 @@ async def get_resources_list_handler(
     Get a list of available resources for the user.
 
     - **admin** (boolean): Filter out list of resources with owner permissions
-    - **name** (string, null): Resource name
     - **application_id** (string, null): External application identifier
-    - **external_id** (string, null): External application meta information
     """
     try:
         group_users_list = (
@@ -165,9 +147,7 @@ async def get_resources_list_handler(
             user_id=current_user.id,
             user_groups_ids=user_groups_ids,
             admin=admin,
-            name=name,
             application_id=application_id,
-            external_id=external_id,
         )
     except exceptions.ResourceNotFound:
         raise HTTPException(status_code=404, detail="Resources not found")
@@ -179,10 +159,8 @@ async def get_resources_list_handler(
         resources=[
             data.ResourceResponse(
                 id=resource.id,
-                name=resource.name,
                 application_id=resource.application_id,
-                description=resource.description,
-                external_id=resource.external_id,
+                resource_data=resource.resource_data,
                 created_at=resource.created_at,
                 updated_at=resource.updated_at,
             )
@@ -215,59 +193,84 @@ async def get_resource_handler(
 
     return data.ResourceResponse(
         id=resource.id,
-        name=resource.name,
         application_id=resource.application_id,
-        description=resource.description,
-        external_id=resource.external_id,
+        resource_data=resource.resource_data,
         created_at=resource.created_at,
         updated_at=resource.updated_at,
     )
 
 
-@app.put("/{resource_id}", tags=["resources"], response_model=data.ResourceResponse)
+@app.put(
+    "/{resource_id}/data", tags=["resources"], response_model=data.ResourceResponse
+)
 async def update_resource_handler(
     resource_id: UUID = Path(...),
-    name: str = Form(None),
-    description: str = Form(None),
-    application_id: str = Form(None),
-    external_id: str = Form(None),
+    resource_data: Dict[str, Any] = Body(...),
     current_user: brood_models.User = Depends(get_current_user),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceResponse:
     """
-    Update resource name, description, application ID or external ID.
+    Update data of resource.
 
-    - **name** (string, null): Resource name
-    - **description** (string, null): Short description of resource
-    - **application_id** (string, null): External application identifier
-    - **external_id** (string, null): External application meta information
+    - **resource_id** (uuid): Resource ID
+    - **resource_data** (dict): Key-value format
     """
     ensure_resource_permission(
         db_session, current_user.id, resource_id, {data.ResourcePermissions.ADMIN},
     )
     try:
-        updated_resource = actions.update_resource(
+        updated_resource = actions.update_resource_data(
             db_session=db_session,
             resource_id=resource_id,
-            name=name,
-            description=description,
-            application_id=application_id,
-            external_id=external_id,
+            resource_data_new=resource_data,
         )
     except exceptions.ResourceNotFound:
         raise HTTPException(status_code=404, detail="Resource not found")
-    except exceptions.ResourceInvalidParameters:
-        raise HTTPException(status_code=400, detail="Invalid resource parameters")
     except Exception as err:
         logger.error(f"Unhandled error in get_resource_handler: {str(err)}")
         raise HTTPException(status_code=500)
 
     return data.ResourceResponse(
         id=updated_resource.id,
-        name=updated_resource.name,
         application_id=updated_resource.application_id,
-        description=updated_resource.description,
-        external_id=updated_resource.external_id,
+        resource_data=updated_resource.resource_data,
+        created_at=updated_resource.created_at,
+        updated_at=updated_resource.updated_at,
+    )
+
+
+@app.delete(
+    "/{resource_id}/data", tags=["resources"], response_model=data.ResourceResponse
+)
+async def remove_resource_data_handler(
+    resource_id: UUID = Path(...),
+    data_keys: data.ResourceDataKeyRemoveRequest = Body(...),
+    current_user: brood_models.User = Depends(get_current_user),
+    db_session=Depends(yield_db_session_from_env),
+) -> data.ResourceResponse:
+    """
+    Delete key from resource data.
+
+    - **resource_id** (uuid): Resource ID
+    - **data_key** (list): List of key to remove
+    """
+    ensure_resource_permission(
+        db_session, current_user.id, resource_id, {data.ResourcePermissions.ADMIN},
+    )
+    try:
+        updated_resource = actions.remove_resource_data(
+            db_session=db_session, resource_id=resource_id, data_keys=data_keys,
+        )
+    except exceptions.ResourceNotFound:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    except Exception as err:
+        logger.error(f"Unhandled error in get_resource_handler: {str(err)}")
+        raise HTTPException(status_code=500)
+
+    return data.ResourceResponse(
+        id=updated_resource.id,
+        application_id=updated_resource.application_id,
+        resource_data=updated_resource.resource_data,
         created_at=updated_resource.created_at,
         updated_at=updated_resource.updated_at,
     )
@@ -297,10 +300,8 @@ async def delete_resource_handler(
 
     return data.ResourceResponse(
         id=resource.id,
-        name=resource.name,
         application_id=resource.application_id,
-        description=resource.description,
-        external_id=resource.external_id,
+        resource_data=resource.resource_data,
         created_at=resource.created_at,
         updated_at=resource.updated_at,
     )
