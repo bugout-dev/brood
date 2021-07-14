@@ -79,6 +79,10 @@ class TokenType(Enum):
 
 class User(Base):  # type: ignore
     __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("username", "application_id"),
+        UniqueConstraint("normalized_email", "application_id"),
+    )
 
     id = Column(
         UUID(as_uuid=True),
@@ -87,11 +91,11 @@ class User(Base):  # type: ignore
         unique=True,
         nullable=False,
     )
-    username = Column(String(100), unique=True, nullable=False, index=True)
+    username = Column(String(100), nullable=False, index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
     email = Column(String, nullable=False)
-    normalized_email = Column(String, unique=True, nullable=False, index=True)
+    normalized_email = Column(String, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
     auth_type = Column(String(50), nullable=False)
     verified = Column(Boolean, default=False, nullable=False, index=True)
