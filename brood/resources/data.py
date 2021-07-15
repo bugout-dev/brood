@@ -39,8 +39,9 @@ class ResourcesListResponse(BaseModel):
     resources: List[ResourceResponse] = Field(default_factory=list)
 
 
-class ResourceDataKeyRemoveRequest(BaseModel):
-    data_keys: List[str] = Field(default_factory=list)
+class ResourceDataUpdateRequest(BaseModel):
+    update: Dict[str, Any]
+    drop_keys: List[str] = Field(default_factory=list)
 
 
 class ResourceHolderResponse(BaseModel):

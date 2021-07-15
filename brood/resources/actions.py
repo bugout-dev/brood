@@ -121,12 +121,10 @@ def get_list_of_resources(
     db_session: Session,
     user_id: UUID,
     user_groups_ids: List[UUID],
-    admin: bool = False,
-    application_id: Optional[str] = None,
+    params: Dict[str, Any],
 ) -> List[models.Resource]:
     """
     Return list of available resource to user. 
-    If admin is True, return only resource with admin privileges.
     """
     query = (
         db_session.query(models.Resource)
@@ -141,21 +139,9 @@ def get_list_of_resources(
             )
         )
     )
-    if admin:
-        admin_resource_id_subquery = (
-            db_session.query(models.ResourcePermission.id.label("admin_resource_id"))
-            .filter(
-                models.ResourcePermission.permission
-                == data.ResourcePermissions.ADMIN.value
-            )
-            .subquery()
-        )
-        query = query.filter(
-            models.ResourceHolderPermission.permission_id
-            == admin_resource_id_subquery.c.admin_resource_id
-        )
-    if application_id is not None:
-        query = query.filter(models.Resource.application_id == application_id)
+
+    for key, value in params.items():
+        query = query.filter(models.Resource.resource_data[key].astext == value)
 
     resources = query.all()
     if len(resources) == 0:
@@ -179,7 +165,7 @@ def get_resource(db_session: Session, resource_id: UUID) -> models.Resource:
 
 
 def update_resource_data(
-    db_session: Session, resource_id: UUID, resource_data_new: Dict[str, Any],
+    db_session: Session, resource_id: UUID, update_data: data.ResourceDataUpdateRequest,
 ) -> models.Resource:
     """
     Update resource data.
@@ -189,33 +175,18 @@ def update_resource_data(
     if resource is None:
         raise exceptions.ResourceNotFound("Not found requested resource")
 
+    # Update existing data
     resource_data = dict(resource.resource_data)
-    for key, value in resource_data_new.items():
+    for key, value in update_data.update.items():
         resource_data[key] = value
-    resource.resource_data = resource_data
-    db_session.commit()
-
-    return resource
-
-
-def remove_resource_data(
-    db_session: Session, resource_id: UUID, data_keys: data.ResourceDataKeyRemoveRequest
-) -> models.Resource:
-    """
-    Delete keys from resource_data column.
-    """
-    query = db_session.query(models.Resource).filter(models.Resource.id == resource_id)
-    resource = query.one_or_none()
-    if resource is None:
-        raise exceptions.ResourceNotFound("Not found requested resource")
-
-    resource_data = dict(resource.resource_data)
-    for data_key in data_keys.data_keys:
+    # Remove data by key
+    for drop_key in update_data.drop_keys:
         try:
-            del resource_data[data_key]
-        except Exception as err:
+            del resource_data[drop_key]
+        except Exception:
             pass
     resource.resource_data = resource_data
+
     db_session.commit()
 
     return resource

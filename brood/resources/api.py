@@ -8,6 +8,7 @@ from fastapi import (
     Form,
     Path,
     Depends,
+    Request,
     Query,
     HTTPException,
 )
@@ -124,17 +125,17 @@ async def create_resource_handler(
 
 @app.get("/", tags=["resources"], response_model=data.ResourcesListResponse)
 async def get_resources_list_handler(
-    admin: bool = Query(False),
-    application_id: str = Query(None),
+    request: Request,
     current_user: brood_models.User = Depends(get_current_user),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourcesListResponse:
     """
     Get a list of available resources for the user.
 
-    - **admin** (boolean): Filter out list of resources with owner permissions
-    - **application_id** (string, null): External application identifier
+    - **<query>** (string): Any query param to filter resources output by resource_data key
     """
+    params = {param: request.query_params[param] for param in request.query_params}
+
     try:
         group_users_list = (
             db_session.query(brood_models.GroupUser)
@@ -143,11 +144,7 @@ async def get_resources_list_handler(
         )
         user_groups_ids = [group.group_id for group in group_users_list]
         resources = actions.get_list_of_resources(
-            db_session=db_session,
-            user_id=current_user.id,
-            user_groups_ids=user_groups_ids,
-            admin=admin,
-            application_id=application_id,
+            db_session, current_user.id, user_groups_ids, params
         )
     except exceptions.ResourceNotFound:
         raise HTTPException(status_code=404, detail="Resources not found")
@@ -200,12 +197,10 @@ async def get_resource_handler(
     )
 
 
-@app.put(
-    "/{resource_id}/data", tags=["resources"], response_model=data.ResourceResponse
-)
+@app.put("/{resource_id}", tags=["resources"], response_model=data.ResourceResponse)
 async def update_resource_handler(
     resource_id: UUID = Path(...),
-    resource_data: Dict[str, Any] = Body(...),
+    update_data: data.ResourceDataUpdateRequest = Body(...),
     current_user: brood_models.User = Depends(get_current_user),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceResponse:
@@ -213,53 +208,15 @@ async def update_resource_handler(
     Update data of resource.
 
     - **resource_id** (uuid): Resource ID
-    - **resource_data** (dict): Key-value format
+    - **update** (dict): Key-value pair to update
+    - **drop_keys** (list): List of keys to drop
     """
     ensure_resource_permission(
         db_session, current_user.id, resource_id, {data.ResourcePermissions.ADMIN},
     )
     try:
         updated_resource = actions.update_resource_data(
-            db_session=db_session,
-            resource_id=resource_id,
-            resource_data_new=resource_data,
-        )
-    except exceptions.ResourceNotFound:
-        raise HTTPException(status_code=404, detail="Resource not found")
-    except Exception as err:
-        logger.error(f"Unhandled error in get_resource_handler: {str(err)}")
-        raise HTTPException(status_code=500)
-
-    return data.ResourceResponse(
-        id=updated_resource.id,
-        application_id=updated_resource.application_id,
-        resource_data=updated_resource.resource_data,
-        created_at=updated_resource.created_at,
-        updated_at=updated_resource.updated_at,
-    )
-
-
-@app.delete(
-    "/{resource_id}/data", tags=["resources"], response_model=data.ResourceResponse
-)
-async def remove_resource_data_handler(
-    resource_id: UUID = Path(...),
-    data_keys: data.ResourceDataKeyRemoveRequest = Body(...),
-    current_user: brood_models.User = Depends(get_current_user),
-    db_session=Depends(yield_db_session_from_env),
-) -> data.ResourceResponse:
-    """
-    Delete key from resource data.
-
-    - **resource_id** (uuid): Resource ID
-    - **data_key** (list): List of key to remove
-    """
-    ensure_resource_permission(
-        db_session, current_user.id, resource_id, {data.ResourcePermissions.ADMIN},
-    )
-    try:
-        updated_resource = actions.remove_resource_data(
-            db_session=db_session, resource_id=resource_id, data_keys=data_keys,
+            db_session=db_session, resource_id=resource_id, update_data=update_data,
         )
     except exceptions.ResourceNotFound:
         raise HTTPException(status_code=404, detail="Resource not found")
