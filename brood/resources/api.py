@@ -135,6 +135,10 @@ async def get_resources_list_handler(
     - **<query>** (string): Any query param to filter resources output by resource_data key
     """
     params = {param: request.query_params[param] for param in request.query_params}
+    application_id = None
+    if "application_id" in params.keys():
+        application_id = params["application_id"]
+        del params["application_id"]
 
     try:
         group_users_list = (
@@ -144,7 +148,7 @@ async def get_resources_list_handler(
         )
         user_groups_ids = [group.group_id for group in group_users_list]
         resources = actions.get_list_of_resources(
-            db_session, current_user.id, user_groups_ids, params
+            db_session, current_user.id, user_groups_ids, params, application_id
         )
     except exceptions.ResourceNotFound:
         raise HTTPException(status_code=404, detail="Resources not found")

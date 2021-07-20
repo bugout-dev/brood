@@ -122,6 +122,7 @@ def get_list_of_resources(
     user_id: UUID,
     user_groups_ids: List[UUID],
     params: Dict[str, Any],
+    application_id: Optional[str] = None,
 ) -> List[models.Resource]:
     """
     Return list of available resource to user. 
@@ -139,7 +140,8 @@ def get_list_of_resources(
             )
         )
     )
-
+    if application_id is not None:
+        query = query.filter(models.Resource.application_id == application_id)
     for key, value in params.items():
         query = query.filter(models.Resource.resource_data[key].astext == value)
 
