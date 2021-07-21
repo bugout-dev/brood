@@ -166,6 +166,7 @@ async def create_token_handler(
     token_type: Optional[models.TokenType] = Form(models.TokenType.bugout),
     token_note: Optional[str] = Form(None),
     restricted: bool = Form(False),
+    application_id: Optional[uuid.UUID] = Form(None),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.TokenResponse:
     """
@@ -186,6 +187,7 @@ async def create_token_handler(
             token_type=token_type,
             token_note=token_note,
             restricted=restricted,
+            application_id=application_id,
         )
     except actions.UserNotFound:
         raise HTTPException(status_code=404, detail="No user with that username")
