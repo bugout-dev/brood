@@ -459,6 +459,7 @@ def get_user(
     username: Optional[str] = None,
     email: Optional[str] = None,
     user_id: Optional[uuid.UUID] = None,
+    application_id: Optional[uuid.UUID] = None,
 ) -> User:
     """
     Get a user by username, email, or user_id. If more than one of those fields is provided, will
@@ -486,6 +487,9 @@ def get_user(
 
     if user_id is not None:
         query = query.filter(User.id == user_id)
+
+    if application_id is not None:
+        query = query.filter(User.application_id == application_id)
 
     user = query.first()
     if user is None:
@@ -901,13 +905,14 @@ def login(
     token_type: Optional[TokenType] = TokenType.bugout,
     token_note: Optional[str] = None,
     restricted: bool = False,
+    application_id: Optional[uuid.UUID] = None,
 ) -> Token:
     """
     Login with the given username and password to get a new token for the user with that username.
     If token_type and token_note provieded it works as token generation handler. By default it
     creates "bugout" token with None in note.
     """
-    user = get_user(session, username=username)
+    user = get_user(session, username=username, application_id=application_id)
 
     password_abide = password_confirm(user, password=password)
     if password_abide is False:
