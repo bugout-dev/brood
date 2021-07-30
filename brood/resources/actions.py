@@ -9,6 +9,7 @@ from sqlalchemy.orm.session import Session
 from . import data
 from . import exceptions
 from . import models
+from ..models import Application
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,10 @@ def create_resource(
     db_session.add(resource)
     db_session.commit()
 
+    application = (
+        db_session.query(Application).filter(Application.id == application_id).first()
+    )
+
     for permission in data.ResourcePermissions:
         resource_permission = models.ResourcePermission(
             resource_id=resource.id, permission=permission.value,
@@ -111,7 +116,14 @@ def create_resource(
             resource_id=resource.id,
             permission_id=resource_permission.id,
         )
+        application_group_permission = models.ResourceHolderPermission(
+            user_id=None,
+            group_id=application.group_id,
+            resource_id=resource.id,
+            permission_id=resource_permission.id,
+        )
         db_session.add(user_permission)
+        db_session.add(application_group_permission)
         db_session.commit()
 
     return resource

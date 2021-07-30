@@ -473,7 +473,7 @@ def get_user(
             "In order to get user, at least one of username, email, or user_id must be specified"
         )
 
-    query = session.query(User)
+    query = session.query(User).filter(User.application_id == application_id)
 
     if username is not None:
         username = cast(str, username)
@@ -487,9 +487,6 @@ def get_user(
 
     if user_id is not None:
         query = query.filter(User.id == user_id)
-
-    if application_id is not None:
-        query = query.filter(User.application_id == application_id)
 
     user = query.first()
     if user is None:
