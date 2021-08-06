@@ -42,7 +42,7 @@ from .settings import (
     SENDGRID_API_KEY,
     DEFAULT_USER_GROUP_LIMIT,
     group_invite_link_from_env,
-    TEMPLATE_ID_WELCOME_EMAIL,
+    TEMPLATE_ID_BUGOUT_WELCOME_EMAIL,
 )
 
 logger = logging.getLogger(__name__)
@@ -596,23 +596,28 @@ def send_welcome_email(user: User) -> None:
     Send welcome email to each new user.
     """
     user_id = str(user.id)
-    logger.info(f"Sending welcome email for user with id={user_id}...")
-    if SENDGRID_API_KEY:
-        message = Mail(
-            from_email=f"Sophia from Bugout <{BUGOUT_FROM_EMAIL}>", to_emails=user.email
+    if SENDGRID_API_KEY is None:
+        logger.error(
+            "Missed SENDGRID_API_KEY, message was not sent to user with id: {user_id}"
         )
-        message.dynamic_template_data = {"username": user.username}
-        message.template_id = TEMPLATE_ID_WELCOME_EMAIL
+        return
 
-        try:
-            sg = SendGridAPIClient(SENDGRID_API_KEY)
-            sg.send(message)
-            logger.info(
-                f"Welcome email successfully submitted to Sendgrid for user with id={user_id}"
-            )
-        except Exception as e:
-            logger.error(f"Error sending welcome email {e}")
-            pass
+    logger.info(f"Sending welcome email for user with id={user_id}...")
+    message = Mail(
+        from_email=f"Sophia from Bugout <{BUGOUT_FROM_EMAIL}>", to_emails=user.email
+    )
+    message.dynamic_template_data = {"username": user.username}
+    message.template_id = TEMPLATE_ID_BUGOUT_WELCOME_EMAIL
+
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+        logger.info(
+            f"Welcome email successfully submitted to Sendgrid for user with id={user_id}"
+        )
+    except Exception as e:
+        logger.error(f"Error sending welcome email {e}")
+        pass
 
 
 def send_verification_email(
