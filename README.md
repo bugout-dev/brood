@@ -2,25 +2,26 @@
 
 ## What is Brood?
 
-Sympathy: Difficulty with -
+Setting up user registration and login in your application can be challenging and time consuming.
+Doing this from scratch takes a lot of planning. Since you're working with sensitive data (emails,
+passwords) it's important not to get it wrong.
 
-1. User management
-2. Team management
-3. Payments
+Giving users the ability to set up groups or teams within which they can share resources adds to this
+challenge, and adding payments compounds it significantly.
 
-Brood is a web service that gives you all this functionality as soon as you set it up.
+Brood is a web service that takes care of user management, team management, and payments in your
+application as soon as you set it up.
 
-Brood is a free and open source alternative to systems like AWS Cognito and Auth0 which also supports
-payments.
+It is a free and open source alternative to systems like AWS Cognito and Auth0.
 
-How it works:
+Brood provides a REST API that you can use either directly from your frontend application or through
+your own API or serverless application. It uses a Postgres database to store data about users,
+teams, and payments.
 
-- Postgres database
-- Sets up tables
-- Manages all the authentication + payment logic
-- Everything exposed via a REST API
+Payments are currently supported through Stripe.
 
-Battle tested - e.g. https://bugout.dev, https://moonstream.to.
+Brood has been battle tested in production and has been supporting millions of authentication events
+a month since March 2021.
 
 ## Running Brood
 
