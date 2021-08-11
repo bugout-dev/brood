@@ -23,6 +23,22 @@ Payments are currently supported through Stripe.
 Brood has been battle tested in production and has been supporting millions of authentication events
 a month since March 2021.
 
+## Using Brood
+
+- Authorization header as the entrypoint to Brood.
+- Using Brood in an API/serverless application vs. frontend - CORS configuration.
+- Client libraries: [Javascript](https://www.npmjs.com/package/@bugout/bugout-js),
+  [Python](https://pypi.org/project/bugout/), [Go](https://github.com/bugout-dev/bugout-go).
+- [API documentation](https://auth.bugout.dev/docs)
+
+<!-- These sections should contain example API requests and responses. -->
+
+### User management
+
+### Team management
+
+### Payments
+
 ## Running Brood
 
 ### Setup:
