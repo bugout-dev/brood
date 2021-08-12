@@ -32,28 +32,31 @@ To get started with Brood, we'll need to generate an authorization token via a P
 - token_note (string, null): Short token description - ""Bugout login token" by default
 - restricted (boolean, null): If True, token will be created with restrictions
 
-Once you obtain the token, you can pass it with future HTTP requests by setting the header as `Authorization: Bearer <token>`
+Once you obtain the token, you can pass it with future HTTP requests by setting the header as `Authorization: Bearer <token>`  
+This same header can be used with any other API that uses Brood for authentication.
 
 ### CORS configuration
 
 <!-- Insert the section about CORS configuration. -->
 
 ### Client libraries
-To make coding against the Brood API easier, you can use one of the following client libraries:  
+To make coding against the Brood API easier, you can use one of the client libraries:  
 - [Javascript](https://www.npmjs.com/package/@bugout/bugout-js)  
 - [Python](https://pypi.org/project/bugout/)  
 - [Go](https://github.com/bugout-dev/bugout-go)  
 
 <!-- These sections should contain example API requests and responses. -->
 ### User management
-As mentioned, user management is one of the main functionalities provided by Brood. You can find, update, create, and delete users, manage their passwords and verify user's email.  
+As mentioned, user management is one of the main functionalities provided by Brood. You can execute CRUD operations with users, manage their passwords and verify user's email.  
 For example, if you wish to create a new user, do a POST `/user` request with
 - username (string): Username
 - email (string): New user email
 - password (string): New user password
 - first_name (string, null): User first name
 - last_name (string, null): User last name
-- application_id (uuid, null): External application user belongs to
+- application_id (uuid, null): External application user belongs to  
+
+<!-- Should I put JS examples here?. -->
 
 Response samples:
 
@@ -89,7 +92,7 @@ Validation error **422**:
 ```
 
 ### Team management
-After creating the users, it is possible to group them into teams. To do so you'll need to create the group and invite other users. The users will receive the invitation that they'll be able to accept or revoke.  
+After creating the users, you'll be able to group them into teams. To do so you'll need to create the group and invite other users. The users will receive an invitation that they'll be able to accept or revoke.  
 For example, to send an invitation make a POST `/groups/{group_id}/invites/send` request with
 - group_id (uuid): Group ID
 - email (string, null): User email
@@ -128,6 +131,7 @@ Brood supports payments through Stripe. Users can ...
 
 <!-- Insert payment examples -->
 
+You can find a more detailed documentation on the API [here](https://auth.bugout.dev/docs)
 
 ### To be removed:
 - Authorization header as the entrypoint to Brood.
@@ -139,10 +143,13 @@ Brood supports payments through Stripe. Users can ...
 
 ## Running Brood
 
-### Setup:
+### Installation and setup
 
-- Clone git repository
-- Install postgresql (https://www.postgresql.org/download/linux/ubuntu/)
+To set up Brood for your development, do the following:
+- Clone the git repository
+- Install postgresql (https://www.postgresql.org/download/linux/ubuntu/)  
+https://www.postgresql.org/docs/current/installation.html - maybe this too
+<!-- these will probably need explanations or screenshots -->
 - Install requirements
 - Copy sample.env to dev.env
 - Copy alembic.sample.ini to alembic.dev.ini
@@ -161,10 +168,9 @@ Brood supports payments through Stripe. Users can ...
 ```
 
 ### Start server:
-
+Once you're ready with the installation, start the server:
 ```
 > ./dev.sh
-
 ```
 
 ### CLI
