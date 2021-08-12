@@ -268,7 +268,7 @@ class ApplicationResponse(BaseModel):
     id: uuid.UUID
     group_id: uuid.UUID
     name: str
-    description: str
+    description: Optional[str] = None
 
 
 class ApplicationsListResponse(BaseModel):
