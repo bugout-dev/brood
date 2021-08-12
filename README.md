@@ -25,129 +25,119 @@ a month since March 2021.
 
 ## Using Brood
 
-To get started with Brood, we'll need to generate an authorization token via a POST `/token` request with the following parameters:
-- username (string): Username - required
-- password (string): User password - required
-- token_type (string): Token type - "bugout" by default
-- token_note (string, null): Short token description - ""Bugout login token" by default
-- restricted (boolean, null): If True, token will be created with restrictions
+To get started with Brood, we'll first need to create a user. This represents a user of your application.
+Creating a user is as simple as `POST`ing a form:
 
-Once you obtain the token, you can pass it with future HTTP requests by setting the header as `Authorization: Bearer <token>`  
-This same header can be used with any other API that uses Brood for authentication.
+```bash
+curl -X POST https://auth.bugout.dev/user \
+    -F "username=pepper" \
+    -F "email=pepper@example.com" \
+    -F "password=1dc23a784ed36056887ef0967e8431817a1a2d9e2b3938eef0d0c9d0227d7c14"
+```
+
+You can also create a user using one of our client libraries. For example, in Javascript:
+
+```javascript
+import BugoutClient, { BugoutTypes } from "@bugout/bugout-js";
+const bugout = new BugoutClient();
+
+bugout
+  .createUser(
+    "pepper",
+    "pepper@example.com",
+    "1dc23a784ed36056887ef0967e8431817a1a2d9e2b3938eef0d0c9d0227d7c14",
+    "Pepper",
+    "Cat"
+  )
+  .then(console.log)
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+```
+
+Each user is identified to Brood using access tokens in the authorization header of Brood requests.
+The authorization header should have the form `Authorization: Bearer <access_token>`.
+
+If you are integrating Brood into your own API or serverless application, you can just pass this header
+through to Brood when you are working with Brood resources and it will handle permissions on your
+behalf with no hassles.
+
+To generate an access token for a user, you again `POST` a form:
+
+```bash
+curl -X POST https://auth.bugout.dev/token \
+    -F "username=pepper" \
+    -F "password=1dc23a784ed36056887ef0967e8431817a1a2d9e2b3938eef0d0c9d0227d7c14"
+```
+
+In Javascript:
+
+```javascript
+import BugoutClient, { BugoutTypes } from "@bugout/bugout-js";
+const bugout = new BugoutClient();
+
+bugout
+  .createToken(
+    "pepper",
+    "1dc23a784ed36056887ef0967e8431817a1a2d9e2b3938eef0d0c9d0227d7c14"
+  )
+  .then(console.log)
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+```
 
 ### CORS configuration
 
-<!-- Insert the section about CORS configuration. -->
+If you are using Brood directly from your frontend, you will need to configure the Brood server to
+respond to CORS requests from your users' browsers. This is actually very simple. When you start
+your Brood servers, simply set the following environment variable:
+
+```bash
+BROOD_CORS_ALLOWED_ORIGINS="<domain at which your site is hosted>"
+```
+
+For example, if your frontend lives at `https://frontend.example.com`, then you would set:
+
+```bash
+BROOD_CORS_ALLOWED_ORIGINS="https://frontend.example.com"
+```
+
+You can pass multiple domains as a comma-separated list. If you had sites at `https://frontend.example.com`
+and at `https://other-frontend.example.com`, you would set:
+
+```bash
+BROOD_CORS_ALLOWED_ORIGINS="https://frontend.example.com,https://other-frontend.example.com"
+```
+
+In your development environment, you can set a localhost domain as follows:
+
+```bash
+BROOD_CORS_ALLOWED_ORIGINS="http://localhost:3000"
+```
 
 ### Client libraries
-To make coding against the Brood API easier, you can use one of the client libraries:  
-- [Javascript](https://www.npmjs.com/package/@bugout/bugout-js)  
-- [Python](https://pypi.org/project/bugout/)  
-- [Go](https://github.com/bugout-dev/bugout-go)  
 
-<!-- These sections should contain example API requests and responses. -->
-### User management
-As mentioned, user management is one of the main functionalities provided by Brood. You can execute CRUD operations with users, manage their passwords and verify user's email.  
-For example, if you wish to create a new user, do a POST `/user` request with
-- username (string): Username
-- email (string): New user email
-- password (string): New user password
-- first_name (string, null): User first name
-- last_name (string, null): User last name
-- application_id (uuid, null): External application user belongs to  
+To make coding against the Brood API easier, you can use one of the client libraries:
 
-<!-- Should I put JS examples here?. -->
+- [Javascript](https://www.npmjs.com/package/@bugout/bugout-js)
+- [Python](https://pypi.org/project/bugout/)
+- [Go](https://github.com/bugout-dev/bugout-go)
 
-Response samples:
-
-Successful response **200**:
-```json
-{
-  "user_id": "a169451c-8525-4352-b8ca-070dd449a1a5",
-  "username": "string",
-  "first_name": "string",
-  "last_name": "string",
-  "email": "string",
-  "normalized_email": "string",
-  "verified": true,
-  "created_at": "2019-08-24T14:15:22Z",
-  "updated_at": "2019-08-24T14:15:22Z",
-  "autogenerated": true,
-  "application_id": "48ac72d0-a829-4896-a067-dcb1c2b0f30c"
-}
-```
-Validation error **422**:
-```json
-{
-  "detail": [
-    {
-      "loc": [
-        "string"
-      ],
-      "msg": "string",
-      "type": "string"
-    }
-  ]
-}
-```
-
-### Team management
-After creating the users, you'll be able to group them into teams. To do so you'll need to create the group and invite other users. The users will receive an invitation that they'll be able to accept or revoke.  
-For example, to send an invitation make a POST `/groups/{group_id}/invites/send` request with
-- group_id (uuid): Group ID
-- email (string, null): User email
-- user_type (string): User permission in group
-
-If the user doesn't exist in the database, an invitation link will be sent to their email.
-
-Response samples:
-
-Successful response **200**:
-
-```json
-{
-  "personal": true,
-  "message": "string"
-}
-```
-Validation error **422**:
-```json
-{
-  "detail": [
-    {
-      "loc": [
-        "string"
-      ],
-      "msg": "string",
-      "type": "string"
-    }
-  ]
-}
-```
-
-### Payments
-
-Brood supports payments through Stripe. Users can ...
-
-<!-- Insert payment examples -->
+### API documentation
 
 You can find a more detailed documentation on the API [here](https://auth.bugout.dev/docs)
-
-### To be removed:
-- Authorization header as the entrypoint to Brood.
-- Using Brood in an API/serverless application vs. frontend - CORS configuration.
-- Client libraries: [Javascript](https://www.npmjs.com/package/@bugout/bugout-js),
-  [Python](https://pypi.org/project/bugout/), [Go](https://github.com/bugout-dev/bugout-go).
-- [API documentation](https://auth.bugout.dev/docs)
-
 
 ## Running Brood
 
 ### Installation and setup
 
 To set up Brood for your development, do the following:
+
 - Clone the git repository
-- Install postgresql (https://www.postgresql.org/download/linux/ubuntu/)  
+- Install postgresql (https://www.postgresql.org/download/linux/ubuntu/)
 https://www.postgresql.org/docs/current/installation.html - maybe this too
 <!-- these will probably need explanations or screenshots -->
 - Install requirements
@@ -168,7 +158,9 @@ https://www.postgresql.org/docs/current/installation.html - maybe this too
 ```
 
 ### Start server:
+
 Once you're ready with the installation, start the server:
+
 ```
 > ./dev.sh
 ```
