@@ -105,7 +105,7 @@ async def create_resource_handler(
     Create the resource.
     Current user will inherit all permissions to the resource.
 
-    - **data** (dict): 
+    - **data** (dict):
         - **application_id** (uuid)
         - **resource_data** (dict)
     """
@@ -150,8 +150,6 @@ async def get_resources_list_handler(
         resources = actions.get_list_of_resources(
             db_session, current_user.id, user_groups_ids, params, application_id
         )
-    except exceptions.ResourceNotFound:
-        raise HTTPException(status_code=404, detail="Resources not found")
     except Exception as err:
         logger.error(f"Unhandled error in get_resources_list_handler: {str(err)}")
         raise HTTPException(status_code=500)

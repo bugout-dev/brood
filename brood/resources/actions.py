@@ -137,7 +137,7 @@ def get_list_of_resources(
     application_id: Optional[str] = None,
 ) -> List[models.Resource]:
     """
-    Return list of available resource to user. 
+    Return list of available resource to user.
     """
     query = (
         db_session.query(models.Resource)
@@ -158,10 +158,6 @@ def get_list_of_resources(
         query = query.filter(models.Resource.resource_data[key].astext == value)
 
     resources = query.all()
-    if len(resources) == 0:
-        raise exceptions.ResourceNotFound(
-            f"Did not found resources for user with id: {user_id}"
-        )
 
     return resources
 
