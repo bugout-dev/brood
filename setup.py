@@ -33,5 +33,10 @@ setup(
         "Programming Language :: Python",
     ],
     url="https://github.com/simiotics/brood",
-    entry_points={"console_scripts": ["brood=brood.cli:main"]},
+    entry_points={
+        "console_scripts": [
+            "brood=brood.cli:main",
+            "resources=brood.resources.cli:main",
+        ]
+    },
 )

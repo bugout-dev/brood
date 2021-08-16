@@ -312,6 +312,16 @@ def kv_brood_as_json_dict(kv_brood: KVBrood) -> Dict[str, Any]:
     return kv_brood_json
 
 
+def application_as_json_dict(application: Application) -> Dict[str, Any]:
+    application_json = {
+        "id": str(application.id),
+        "group_id": str(application.group_id),
+        "name": application.name,
+        "description": application.description,
+    }
+    return application_json
+
+
 def get_password_context() -> CryptContext:
     """
     Generate a passlib context for Brood passwords.
