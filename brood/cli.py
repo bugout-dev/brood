@@ -9,6 +9,7 @@ import uuid
 
 from . import actions
 from . import data
+from . import exceptions
 from . import subscriptions
 from .external import SessionLocal
 from .models import (
@@ -19,6 +20,7 @@ from .models import (
     Subscription,
     SubscriptionPlan,
     KVBrood,
+    Application,
 )
 
 
@@ -622,6 +624,60 @@ def kv_delete_handler(args: argparse.Namespace) -> None:
         session.close()
 
 
+def applications_list_handler(args: argparse.Namespace) -> None:
+    """
+    Handler for "applications list" command.
+    """
+    session = SessionLocal()
+    try:
+        query = session.query(Application)
+        if args.group is not None:
+            query = query.filter(Application.group_id == args.group)
+
+        applications = query.all()
+
+        print(
+            json.dumps(
+                {
+                    "applications": [
+                        actions.application_as_json_dict(application)
+                        for application in applications
+                    ]
+                }
+            )
+        )
+    finally:
+        session.close()
+
+
+def application_create_handler(args: argparse.Namespace) -> None:
+    session = SessionLocal()
+    try:
+        application = Application(
+            group_id=args.group, name=args.name, description=args.description,
+        )
+        session.add(application)
+        session.commit()
+        print(json.dumps(actions.application_as_json_dict(application)))
+    finally:
+        session.close()
+
+
+def application_migrate_handler(args: argparse.Namespace) -> None:
+    session = SessionLocal()
+    try:
+        query = session.query(Application).filter(Application.id == args.application)
+        application = query.one_or_none()
+        if application is None:
+            raise exceptions.ApplicationsNotFound("Application not found")
+
+        query.update({Application.group_id: args.group})
+        session.commit()
+        print(json.dumps(actions.application_as_json_dict(application)))
+    finally:
+        session.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Brood CLI")
     parser.set_defaults(func=lambda _: parser.print_help())
@@ -1070,6 +1126,45 @@ def main() -> None:
         "-k", "--kv_key", required=True, help="Name of variable"
     )
     parser_kv_delete.set_defaults(func=kv_delete_handler)
+
+    # Applications command parser
+    parser_applications = subcommands.add_parser(
+        "applications", description="Brood applications"
+    )
+    parser_applications.set_defaults(func=lambda _: parser_applications.print_help())
+    subcommands_applications = parser_applications.add_subparsers(
+        description="Brood application commands"
+    )
+    parser_applications_list = subcommands_applications.add_parser(
+        "list", description="List all applications"
+    )
+    parser_applications_list.add_argument(
+        "-g", "--group", help="Filter applications by group ID"
+    )
+    parser_applications_list.set_defaults(func=applications_list_handler)
+    parser_applications_create = subcommands_applications.add_parser(
+        "create", description="Create new application"
+    )
+    parser_applications_create.add_argument(
+        "-g", "--group", required=True, help="Filter applications by group ID"
+    )
+    parser_applications_create.add_argument(
+        "-n", "--name", required=True, help="Name of application"
+    )
+    parser_applications_create.add_argument(
+        "-d", "--description", help="Description of application"
+    )
+    parser_applications_create.set_defaults(func=application_create_handler)
+    parser_applications_migrate = subcommands_applications.add_parser(
+        "migrate", description="Migrate application to another group"
+    )
+    parser_applications_migrate.add_argument(
+        "-a", "--application", required=True, help="Applications ID"
+    )
+    parser_applications_migrate.add_argument(
+        "-g", "--group", required=True, help="Group ID migrate to"
+    )
+    parser_applications_migrate.set_defaults(func=application_migrate_handler)
 
     args = parser.parse_args()
     args.func(args)
