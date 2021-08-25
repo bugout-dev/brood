@@ -43,6 +43,8 @@ from .settings import (
     DEFAULT_USER_GROUP_LIMIT,
     group_invite_link_from_env,
     TEMPLATE_ID_BUGOUT_WELCOME_EMAIL,
+    TEMPLATE_ID_MOONSTREAM_WELCOME_EMAIL,
+    MOONSTREAM_APPLICATION_ID,
 )
 
 logger = logging.getLogger(__name__)
@@ -601,23 +603,34 @@ def change_password(
     return user
 
 
-def send_welcome_email(user: User) -> None:
+def send_welcome_email(user: User, application_id: Optional[uuid.UUID] = None) -> None:
     """
     Send welcome email to each new user.
     """
     user_id = str(user.id)
     if SENDGRID_API_KEY is None:
         logger.error(
-            "Missed SENDGRID_API_KEY, message was not sent to user with id: {user_id}"
+            f"Missed SENDGRID_API_KEY, message was not sent to user with id: {user_id}"
         )
         return
 
-    logger.info(f"Sending welcome email for user with id={user_id}...")
     message = Mail(
         from_email=f"Sophia from Bugout <{BUGOUT_FROM_EMAIL}>", to_emails=user.email
     )
     message.dynamic_template_data = {"username": user.username}
-    message.template_id = TEMPLATE_ID_BUGOUT_WELCOME_EMAIL
+
+    if application_id is not None:
+        if str(application_id) != MOONSTREAM_APPLICATION_ID:
+            logger.error(
+                f"Unhandled welcome email for application with id: {str(application_id)}"
+            )
+            return
+        else:
+            message.template_id = TEMPLATE_ID_MOONSTREAM_WELCOME_EMAIL
+    else:
+        message.template_id = TEMPLATE_ID_BUGOUT_WELCOME_EMAIL
+
+    logger.info(f"Sending welcome email for user with id={user_id}...")
 
     try:
         sg = SendGridAPIClient(SENDGRID_API_KEY)
