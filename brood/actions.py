@@ -372,10 +372,6 @@ def verify_password_strength(password: str) -> None:
             f"Password must contain at least {required_len} characters"
         )
 
-    white_space_matches = SPACE_REGEX.search(password)
-    if white_space_matches is not None:
-        raise PasswordInvalidParameters(f"Password must not contain spaces")
-
 
 def verify_username(username: str) -> None:
     white_space_matches = SPACE_REGEX.search(username)
