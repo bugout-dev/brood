@@ -380,7 +380,9 @@ def verify_username(username: str) -> None:
 
 
 def password_confirm(
-    user: User, password: Optional[str] = None, password_hash: Optional[str] = None,
+    user: User,
+    password: Optional[str] = None,
+    password_hash: Optional[str] = None,
 ) -> bool:
     """
     Confirm password provided by user.
@@ -582,7 +584,9 @@ def change_password(
     user = get_user(session, username, email, user_id)
 
     password_abide = password_confirm(
-        user, password=current_password, password_hash=current_password_hash,
+        user,
+        password=current_password,
+        password_hash=current_password_hash,
     )
     if password_abide is False:
         raise UserIncorrectPassword(
@@ -664,7 +668,9 @@ def send_verification_email(
 
     verification_code = generate_verification_code()
     verification_email = VerificationEmail(
-        verification_code=verification_code, active=True, user_id=user.id,
+        verification_code=verification_code,
+        active=True,
+        user_id=user.id,
     )
     session.add(verification_email)
     session.commit()
@@ -1313,7 +1319,9 @@ def set_user_in_group(
 
 
 def change_group_name(
-    session: Session, group_id: uuid.UUID, group_name: str,
+    session: Session,
+    group_id: uuid.UUID,
+    group_name: str,
 ) -> data.GroupResponse:
     """
     Change group name by group id.
@@ -1417,7 +1425,9 @@ def delete_group(session: Session, group_id: uuid.UUID, current_user: User) -> G
 
 
 def check_user_type_in_group(
-    session: Session, user_id: uuid.UUID, group_id: uuid.UUID,
+    session: Session,
+    user_id: uuid.UUID,
+    group_id: uuid.UUID,
 ) -> data.GroupUserResponse:
     """
     Checks if user is an owner or member of requested group.
@@ -1650,7 +1660,9 @@ def get_applications(
 
 
 def delete_application(
-    db_session: Session, application_id: uuid.UUID, groups_ids: List[uuid.UUID],
+    db_session: Session,
+    application_id: uuid.UUID,
+    groups_ids: List[uuid.UUID],
 ) -> Application:
     application = (
         db_session.query(Application)

@@ -40,7 +40,8 @@ def resources_create_handler(args: argparse.Namespace) -> None:
     session = SessionLocal()
     try:
         resource = Resource(
-            application_id=args.application, resource_data=json.loads(args.data),
+            application_id=args.application,
+            resource_data=json.loads(args.data),
         )
         session.add(resource)
         session.commit()
@@ -78,17 +79,23 @@ def main() -> None:
         "list", description="List Brood resources"
     )
     parser_resources_list.add_argument(
-        "-a", "--application", help="Application ID filter",
+        "-a",
+        "--application",
+        help="Application ID filter",
     )
     parser_resources_list.set_defaults(func=resources_list_handler)
     parser_resources_create = subcommands_resources.add_parser(
         "create", description="Create Brood resources"
     )
     parser_resources_create.add_argument(
-        "-a", "--application", help="Application ID filter",
+        "-a",
+        "--application",
+        help="Application ID filter",
     )
     parser_resources_create.add_argument(
-        "-d", "--data", help="Resource data, as ex: '{\"age\": 23}'",
+        "-d",
+        "--data",
+        help="Resource data, as ex: '{\"age\": 23}'",
     )
     parser_resources_create.set_defaults(func=resources_create_handler)
 

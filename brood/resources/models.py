@@ -84,7 +84,8 @@ class ResourcePermission(Base):  # type: ignore
         nullable=False,
     )
     resource_id = Column(
-        UUID(as_uuid=True), ForeignKey("resources.id", ondelete="CASCADE"),
+        UUID(as_uuid=True),
+        ForeignKey("resources.id", ondelete="CASCADE"),
     )
     permission = Column(String, nullable=False)
 
@@ -111,10 +112,12 @@ class ResourceHolderPermission(Base):  # type: ignore
         UUID(as_uuid=True), ForeignKey(Group.id, ondelete="CASCADE"), nullable=True
     )
     resource_id = Column(
-        UUID(as_uuid=True), ForeignKey("resources.id", ondelete="CASCADE"),
+        UUID(as_uuid=True),
+        ForeignKey("resources.id", ondelete="CASCADE"),
     )
     permission_id = Column(
-        UUID(as_uuid=True), ForeignKey("resource_permissions.id", ondelete="CASCADE"),
+        UUID(as_uuid=True),
+        ForeignKey("resource_permissions.id", ondelete="CASCADE"),
     )
     created_at = Column(
         DateTime(timezone=True), server_default=utcnow(), nullable=False

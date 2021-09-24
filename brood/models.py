@@ -329,7 +329,11 @@ class UserGroupLimit(Base):  # type: ignore
 
     __tablename__ = "user_group_limits"
 
-    id = Column(Integer, primary_key=True, autoincrement=True,)
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", name="fk_user_group_limits_user_id", ondelete="CASCADE"),
@@ -403,8 +407,16 @@ class KVBrood(Base):  # type: ignore
 
     __tablename__ = "kv_brood"
 
-    kv_key = Column(String, primary_key=True, unique=True, nullable=False,)
-    kv_value = Column(String, nullable=False,)
+    kv_key = Column(
+        String,
+        primary_key=True,
+        unique=True,
+        nullable=False,
+    )
+    kv_value = Column(
+        String,
+        nullable=False,
+    )
 
 
 class Application(Base):  # type: ignore
