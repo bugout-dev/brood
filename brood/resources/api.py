@@ -134,7 +134,6 @@ async def get_resources_list_handler(
 
     - **<query>** (string): Any query param to filter resources output by resource_data key
     """
-    raise HTTPException(status_code=401)
     params = {param: request.query_params[param] for param in request.query_params}
     application_id = None
     if "application_id" in params.keys():
