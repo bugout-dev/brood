@@ -4,7 +4,6 @@ asgiref==3.4.1
 black==21.9b0
 boto3==1.18.47
 botocore==1.21.47
--e git+git@github.com:bugout-dev/brood.git@4fa1d00cc97172e7be512909674146b9fd3a8d64#egg=brood
 certifi==2021.5.30
 cffi==1.14.6
 charset-normalizer==2.0.6
