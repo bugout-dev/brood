@@ -214,7 +214,7 @@ async def update_resource_handler(
     - **drop_keys** (list): List of keys to drop
     """
     ensure_resource_permission(
-        db_session, current_user.id, resource_id, {data.ResourcePermissions.ADMIN},
+        db_session, current_user.id, resource_id, {data.ResourcePermissions.UPDATE},
     )
     try:
         updated_resource = actions.update_resource_data(
