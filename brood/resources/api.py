@@ -247,7 +247,7 @@ async def delete_resource_handler(
     - **resource_id** (uuid): Resource ID
     """
     ensure_resource_permission(
-        db_session, current_user.id, resource_id, {data.ResourcePermissions.DELETE},
+        db_session, current_user.id, resource_id, {data.ResourcePermissions.ADMIN},
     )
     try:
         resource = actions.delete_resource(db_session, resource_id)
