@@ -445,7 +445,9 @@ def plan_list_handler(args: argparse.Namespace) -> None:
     """
     session = SessionLocal()
     try:
-        plans_obj = subscriptions.get_subscription_plans(session,)
+        plans_obj = subscriptions.get_subscription_plans(
+            session,
+        )
         plans = {
             "plans": [actions.plan_as_json_dict(plan_obj) for plan_obj in plans_obj]
         }
@@ -654,7 +656,9 @@ def application_create_handler(args: argparse.Namespace) -> None:
     session = SessionLocal()
     try:
         application = Application(
-            group_id=args.group, name=args.name, description=args.description,
+            group_id=args.group,
+            name=args.name,
+            description=args.description,
         )
         session.add(application)
         session.commit()
@@ -692,13 +696,22 @@ def main() -> None:
         "create", description="Create Brood user"
     )
     parser_users_create.add_argument(
-        "-u", "--username", required=True, help="Username of the user to create",
+        "-u",
+        "--username",
+        required=True,
+        help="Username of the user to create",
     )
     parser_users_create.add_argument(
-        "-e", "--email", required=True, help="Email of the user to create",
+        "-e",
+        "--email",
+        required=True,
+        help="Email of the user to create",
     )
     parser_users_create.add_argument(
-        "-p", "--password", required=True, help="Password of the user to create",
+        "-p",
+        "--password",
+        required=True,
+        help="Password of the user to create",
     )
     parser_users_create.add_argument(
         "--verified",
@@ -709,10 +722,14 @@ def main() -> None:
 
     parser_users_get = subcommands_users.add_parser("get", description="Get Brood user")
     parser_users_get.add_argument(
-        "-u", "--username", help="Username of the user to get",
+        "-u",
+        "--username",
+        help="Username of the user to get",
     )
     parser_users_get.add_argument(
-        "-e", "--email", help="Email of the user to get",
+        "-e",
+        "--email",
+        help="Email of the user to get",
     )
     parser_users_get.set_defaults(func=users_get_handler)
 
@@ -720,10 +737,14 @@ def main() -> None:
         "delete", description="Delete Brood user"
     )
     parser_users_delete.add_argument(
-        "-u", "--username", help="Username of the user to delete",
+        "-u",
+        "--username",
+        help="Username of the user to delete",
     )
     parser_users_delete.add_argument(
-        "-e", "--email", help="Email of the user to delete",
+        "-e",
+        "--email",
+        help="Email of the user to delete",
     )
     parser_users_delete.set_defaults(func=users_delete_handler)
 
@@ -731,13 +752,19 @@ def main() -> None:
         "newpassword", description="Update password"
     )
     parser_users_newpassword.add_argument(
-        "-u", "--username", help="Username of the user to update password for",
+        "-u",
+        "--username",
+        help="Username of the user to update password for",
     )
     parser_users_newpassword.add_argument(
-        "-e", "--email", help="Email of the user to update password for",
+        "-e",
+        "--email",
+        help="Email of the user to update password for",
     )
     parser_users_newpassword.add_argument(
-        "-p", "--current-password", help="Current password for user",
+        "-p",
+        "--current-password",
+        help="Current password for user",
     )
     parser_users_newpassword.add_argument("new_password", help="New password")
     parser_users_newpassword.set_defaults(func=users_newpassword_handler)
@@ -746,10 +773,14 @@ def main() -> None:
         "forcepassword", description="Update password"
     )
     parser_users_forcepassword.add_argument(
-        "-u", "--username", help="Username of the user to update password for",
+        "-u",
+        "--username",
+        help="Username of the user to update password for",
     )
     parser_users_forcepassword.add_argument(
-        "-e", "--email", help="Email of the user to update password for",
+        "-e",
+        "--email",
+        help="Email of the user to update password for",
     )
     parser_users_forcepassword.add_argument("new_password", help="New password")
     parser_users_forcepassword.set_defaults(func=users_forcepassword_handler)
@@ -787,10 +818,14 @@ def main() -> None:
         "send", description="Send Brood user verification email"
     )
     parser_verifications_send.add_argument(
-        "-u", "--username", help="Username of the user to verify",
+        "-u",
+        "--username",
+        help="Username of the user to verify",
     )
     parser_verifications_send.add_argument(
-        "-e", "--email", help="Email of the user to verify",
+        "-e",
+        "--email",
+        help="Email of the user to verify",
     )
     parser_verifications_send.set_defaults(func=verifications_send_handler)
 
@@ -798,13 +833,18 @@ def main() -> None:
         "complete", description="Complete Brood user verification"
     )
     parser_verifications_complete.add_argument(
-        "-u", "--username", help="Username of the user to complete verification for",
+        "-u",
+        "--username",
+        help="Username of the user to complete verification for",
     )
     parser_verifications_complete.add_argument(
-        "-e", "--email", help="Email of the user to complete verification for",
+        "-e",
+        "--email",
+        help="Email of the user to complete verification for",
     )
     parser_verifications_complete.add_argument(
-        "code", help="Verification code to complete verification with",
+        "code",
+        help="Verification code to complete verification with",
     )
     parser_verifications_complete.set_defaults(func=verifications_complete_handler)
 
@@ -818,10 +858,14 @@ def main() -> None:
         "create", description="Generate token for Brood user"
     )
     parser_tokens_create.add_argument(
-        "-u", "--username", help="Username of the user to complete verification for",
+        "-u",
+        "--username",
+        help="Username of the user to complete verification for",
     )
     parser_tokens_create.add_argument(
-        "-e", "--email", help="Email of the user to complete verification for",
+        "-e",
+        "--email",
+        help="Email of the user to complete verification for",
     )
     parser_tokens_create.add_argument(
         "-R",
@@ -862,10 +906,16 @@ def main() -> None:
         "create", description="Create Brood group"
     )
     parser_groups_create.add_argument(
-        "-n", "--name", required=True, help="Group name",
+        "-n",
+        "--name",
+        required=True,
+        help="Group name",
     )
     parser_groups_create.add_argument(
-        "-u", "--username", required=True, help="Username of the group owner",
+        "-u",
+        "--username",
+        required=True,
+        help="Username of the group owner",
     )
     parser_groups_create.set_defaults(func=group_create_handler)
 
@@ -873,10 +923,14 @@ def main() -> None:
         "get", description="Get Brood group"
     )
     parser_groups_get.add_argument(
-        "-n", "--name", help="Group name",
+        "-n",
+        "--name",
+        help="Group name",
     )
     parser_groups_get.add_argument(
-        "-i", "--id", help="Group id",
+        "-i",
+        "--id",
+        help="Group id",
     )
     parser_groups_get.set_defaults(func=group_get_handler)
 
@@ -889,10 +943,17 @@ def main() -> None:
         "role", description="Add user to Brood group and set role"
     )
     parser_groups_role.add_argument(
-        "-g", "--group", type=uuid.UUID, required=True, help="Group id",
+        "-g",
+        "--group",
+        type=uuid.UUID,
+        required=True,
+        help="Group id",
     )
     parser_groups_role.add_argument(
-        "-u", "--username", required=True, help="Added user username",
+        "-u",
+        "--username",
+        required=True,
+        help="Added user username",
     )
     parser_groups_role.add_argument(
         "-t",
@@ -915,7 +976,12 @@ def main() -> None:
         "add", description="Add subscription plan to group"
     )
     parser_groups_subscription_add.add_argument(
-        "-g", "--groups", nargs="+", type=uuid.UUID, required=True, help="Groups ids",
+        "-g",
+        "--groups",
+        nargs="+",
+        type=uuid.UUID,
+        required=True,
+        help="Groups ids",
     )
     parser_groups_subscription_add.add_argument(
         "-p",
@@ -925,10 +991,12 @@ def main() -> None:
         help="Subscription plan Bugout ID",
     )
     parser_groups_subscription_add.add_argument(
-        "--stripe_customer_id", help="Stripe customer ID",
+        "--stripe_customer_id",
+        help="Stripe customer ID",
     )
     parser_groups_subscription_add.add_argument(
-        "--stripe_subscription_id", help="Stripe subscription ID",
+        "--stripe_subscription_id",
+        help="Stripe subscription ID",
     )
     parser_groups_subscription_add.add_argument(
         "-u",
@@ -947,19 +1015,29 @@ def main() -> None:
         "update", description="Update subscription plan for group"
     )
     parser_groups_subscription_update.add_argument(
-        "-g", "--group", type=uuid.UUID, help="Group id",
+        "-g",
+        "--group",
+        type=uuid.UUID,
+        help="Group id",
     )
     parser_groups_subscription_update.add_argument(
-        "-p", "--plan", type=uuid.UUID, help="Subscription plan Bugout ID",
+        "-p",
+        "--plan",
+        type=uuid.UUID,
+        help="Subscription plan Bugout ID",
     )
     parser_groups_subscription_update.add_argument(
-        "--stripe_customer_id", help="Stripe customer ID",
+        "--stripe_customer_id",
+        help="Stripe customer ID",
     )
     parser_groups_subscription_update.add_argument(
-        "--stripe_subscription_id", help="Stripe subscription ID",
+        "--stripe_subscription_id",
+        help="Stripe subscription ID",
     )
     parser_groups_subscription_update.add_argument(
-        "-u", "--units", help="Set units for group subscription",
+        "-u",
+        "--units",
+        help="Set units for group subscription",
     )
     parser_groups_subscription_update.add_argument(
         "-a",
@@ -975,7 +1053,11 @@ def main() -> None:
         "remove", description="Remove subscription plan from group"
     )
     parser_groups_subscription_remove.add_argument(
-        "-g", "--group", type=uuid.UUID, required=True, help="Group ID",
+        "-g",
+        "--group",
+        type=uuid.UUID,
+        required=True,
+        help="Group ID",
     )
     parser_groups_subscription_remove.add_argument(
         "-p",
@@ -1072,10 +1154,17 @@ def main() -> None:
         "remove", description="Clear Subscription Plan attribute"
     )
     parser_plans_attr_remove.add_argument(
-        "-i", "--id", type=uuid.UUID, required=True, help="Subscription plan Bugout ID",
+        "-i",
+        "--id",
+        type=uuid.UUID,
+        required=True,
+        help="Subscription plan Bugout ID",
     )
     parser_plans_attr_remove.add_argument(
-        "-a", "--attr", required=True, help="Attribute to clear",
+        "-a",
+        "--attr",
+        required=True,
+        help="Attribute to clear",
     )
     parser_plans_attr_remove.set_defaults(func=plan_attr_remove_handler)
 

@@ -234,7 +234,10 @@ def add_group_subscription(
 
 
 def add_volume_subscription(
-    db_session: Session, plan: SubscriptionPlan, group: Group, units_required: int,
+    db_session: Session,
+    plan: SubscriptionPlan,
+    group: Group,
+    units_required: int,
 ) -> SubscriptionManageResponse:
     """
     Generated Stripe customer or extract existen and create group subscription.
@@ -243,7 +246,9 @@ def add_volume_subscription(
 
     # Generate new Stripe user with unpaid group subscription or retrieve existing customer.
     if subscription is None:
-        customer = stripe.Customer.create(description=group.name,)
+        customer = stripe.Customer.create(
+            description=group.name,
+        )
         subscription = add_group_subscription(
             session=db_session,
             group_id=group.id,
@@ -282,7 +287,10 @@ def add_volume_subscription(
 
 
 def add_internal_subscription(
-    db_session: Session, plan: SubscriptionPlan, group: Group, units_required: int,
+    db_session: Session,
+    plan: SubscriptionPlan,
+    group: Group,
+    units_required: int,
 ) -> SubscriptionManageResponse:
     """
     Add Free or internal subscriptions to group.
@@ -307,7 +315,10 @@ def add_internal_subscription(
 
 
 def update_group_subscription(
-    session: Session, group_id: UUID, plan_id: UUID, **kwargs: Optional[Any],
+    session: Session,
+    group_id: UUID,
+    plan_id: UUID,
+    **kwargs: Optional[Any],
 ) -> Subscription:
     """
     Updates group subscription attributes by provided group_id and plan_id.
@@ -401,7 +412,8 @@ def stripe_customer_portal(stripe_customer_id: str) -> stripe.billing_portal.Ses
     Docs: https://stripe.com/docs/billing/subscriptions/integrating-customer-portal#redirect
     """
     st_session = stripe.billing_portal.Session.create(
-        customer=stripe_customer_id, return_url=BUGOUT_URL,
+        customer=stripe_customer_id,
+        return_url=BUGOUT_URL,
     )
     return st_session
 

@@ -180,7 +180,10 @@ async def get_resource_handler(
     - **resource_id** (uuid): Resource ID
     """
     ensure_resource_permission(
-        db_session, current_user.id, resource_id, {data.ResourcePermissions.READ},
+        db_session,
+        current_user.id,
+        resource_id,
+        {data.ResourcePermissions.READ},
     )
     try:
         resource = actions.get_resource(db_session, resource_id=resource_id)
@@ -214,11 +217,16 @@ async def update_resource_handler(
     - **drop_keys** (list): List of keys to drop
     """
     ensure_resource_permission(
-        db_session, current_user.id, resource_id, {data.ResourcePermissions.UPDATE},
+        db_session,
+        current_user.id,
+        resource_id,
+        {data.ResourcePermissions.UPDATE},
     )
     try:
         updated_resource = actions.update_resource_data(
-            db_session=db_session, resource_id=resource_id, update_data=update_data,
+            db_session=db_session,
+            resource_id=resource_id,
+            update_data=update_data,
         )
     except exceptions.ResourceNotFound:
         raise HTTPException(status_code=404, detail="Resource not found")
@@ -247,7 +255,10 @@ async def delete_resource_handler(
     - **resource_id** (uuid): Resource ID
     """
     ensure_resource_permission(
-        db_session, current_user.id, resource_id, {data.ResourcePermissions.ADMIN},
+        db_session,
+        current_user.id,
+        resource_id,
+        {data.ResourcePermissions.ADMIN},
     )
     try:
         resource = actions.delete_resource(db_session, resource_id)
@@ -291,7 +302,10 @@ async def add_resource_holder_permissions_handler(
     if data.ResourcePermissions.DELETE in permissions_request.permissions:
         required_permissions.add(data.ResourcePermissions.DELETE)
     ensure_resource_permission(
-        db_session, current_user.id, resource_id, required_permissions,
+        db_session,
+        current_user.id,
+        resource_id,
+        required_permissions,
     )
 
     try:
@@ -329,7 +343,10 @@ async def get_resource_holders_permissions_handler(
     - **holder_id** (uuid, null): User or group ID
     """
     ensure_resource_permission(
-        db_session, current_user.id, resource_id, {data.ResourcePermissions.READ},
+        db_session,
+        current_user.id,
+        resource_id,
+        {data.ResourcePermissions.READ},
     )
     try:
         resource = actions.get_resource(db_session, resource_id=resource_id)
@@ -372,7 +389,10 @@ async def delete_resource_holder_permissions_handler(
     if data.ResourcePermissions.DELETE in permissions_request.permissions:
         required_permissions.add(data.ResourcePermissions.DELETE)
     ensure_resource_permission(
-        db_session, current_user.id, resource_id, required_permissions,
+        db_session,
+        current_user.id,
+        resource_id,
+        required_permissions,
     )
 
     try:

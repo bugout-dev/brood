@@ -94,7 +94,8 @@ def create_resource(
     Also attach current user to this permissions.
     """
     resource = models.Resource(
-        application_id=application_id, resource_data=resource_data,
+        application_id=application_id,
+        resource_data=resource_data,
     )
     db_session.add(resource)
     db_session.commit()
@@ -105,7 +106,8 @@ def create_resource(
 
     for permission in data.ResourcePermissions:
         resource_permission = models.ResourcePermission(
-            resource_id=resource.id, permission=permission.value,
+            resource_id=resource.id,
+            permission=permission.value,
         )
         db_session.add(resource_permission)
         db_session.commit()
@@ -175,7 +177,9 @@ def get_resource(db_session: Session, resource_id: UUID) -> models.Resource:
 
 
 def update_resource_data(
-    db_session: Session, resource_id: UUID, update_data: data.ResourceDataUpdateRequest,
+    db_session: Session,
+    resource_id: UUID,
+    update_data: data.ResourceDataUpdateRequest,
 ) -> models.Resource:
     """
     Update resource data.
@@ -228,7 +232,9 @@ def add_holder_permissions(
     """
     holder_permissions_query = db_session.query(
         models.ResourceHolderPermission.permission_id
-    ).filter(models.ResourceHolderPermission.resource_id == resource_id,)
+    ).filter(
+        models.ResourceHolderPermission.resource_id == resource_id,
+    )
     if permissions_request.holder_type == data.HolderType.user:
         holder_permissions_query = holder_permissions_query.filter(
             models.ResourceHolderPermission.user_id == permissions_request.holder_id
