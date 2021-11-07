@@ -41,8 +41,8 @@ def acl_auth(
         .filter(models.ResourceHolderPermission.resource_id == resource_id)
         .filter(
             or_(
-                models.ResourceHolderPermission.holder_id == user_id,
-                models.ResourceHolderPermission.holder_id.in_(user_group_id_list),
+                models.ResourceHolderPermission.user_id == user_id,
+                models.ResourceHolderPermission.group_id.in_(user_group_id_list),
             )
         )
         .all()

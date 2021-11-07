@@ -220,7 +220,7 @@ async def update_resource_handler(
         db_session,
         current_user.id,
         resource_id,
-        {data.ResourcePermissions.ADMIN},
+        {data.ResourcePermissions.UPDATE},
     )
     try:
         updated_resource = actions.update_resource_data(
