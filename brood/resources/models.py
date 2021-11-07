@@ -11,7 +11,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.ext.hybrid import hybrid_property
 
 from ..models import utcnow, User, Group, Application
 
@@ -125,12 +124,3 @@ class ResourceHolderPermission(Base):  # type: ignore
         onupdate=utcnow(),
         nullable=False,
     )
-
-    @hybrid_property
-    def holder_id(self):
-        if self.user_id is not None:
-            return self.user_id
-        elif self.group_id is not None:
-            return self.group_id
-        else:
-            return None
