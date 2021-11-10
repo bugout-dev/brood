@@ -11,7 +11,7 @@ jobs:
         with:
           python-version: "3.8"
       - name: Install test requirements
-        run: pip install -r requirements.txt
+        run: pip install -e .[dev]
       - name: Mypy type check
         run: mypy brood/
       - name: Black syntax check

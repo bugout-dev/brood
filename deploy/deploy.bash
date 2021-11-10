@@ -31,7 +31,7 @@ echo "Updating pip and setuptools"
 echo
 echo
 echo "Updating Python dependencies"
-"${PIP}" install -r "${APP_DIR}/requirements.txt"
+"${PIP}" install -e "${APP_DIR}/"
 
 echo
 echo
