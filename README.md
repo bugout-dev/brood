@@ -138,32 +138,76 @@ To set up Brood for your development, do the following:
 
 - Clone the git repository
 - Install postgresql (https://www.postgresql.org/download/linux/ubuntu/)
-https://www.postgresql.org/docs/current/installation.html - maybe this too
 <!-- these will probably need explanations or screenshots -->
+
+#### Run server from terminal
+
 - Install requirements
-- Copy sample.env to dev.env
-- Copy alembic.sample.ini to alembic.dev.ini
-- Edit variable "sqlalchemy.url = <...>" into alembic.dev.ini
-- Run alembic
 
-```
-> ./alembic.sh -c alembic.dev.ini upgrade head
+```bash
+pip install -e .[dev]
 ```
 
-- Edit in dev.env file BROOD_DB_URI and BROOD_SENDGRID_API_KEY variable. BROOD_SENDGRID_API_KEY you can get in password vault.
-- Last command befor start:
+- Copy `alembic.sample.ini` to `alembic.dev.ini`
+- Edit variable `sqlalchemy.url = <...>` into `alembic.dev.ini`
+- Copy `sample.env` to `dev.env`
+- Edit in `dev.env` file BROOD_DB_URI and other variables.
+- Source environment variables
 
 ```
-> source dev.env
+source dev.env
 ```
 
-### Start server:
+- Run alembic migration
+
+```
+./alembic.sh -c alembic.dev.ini upgrade head
+```
 
 Once you're ready with the installation, start the server:
 
 ```
-> ./dev.sh
+./dev.sh
 ```
+
+#### Run server with Docker
+
+To be able to run Brood with your existing local or development services as database, you need to build your own setup. **Be aware! The file `docker.env` lives inside your docker container!**
+
+- Copy `sample.env` to `docker.env`, or from your local config `dev.env` to `docker.env`
+- Edit in `docker.env` file `BROOD_DB_URI` and other variables if required
+- Clean environment file from `export ` prefix and quotation marks to be able to use it with Docker
+
+```bash
+sed --in-place 's|^export * ||' docker.env
+sed --in-place 's|"||g' docker.env
+```
+
+Build container on your machine
+
+```bash
+docker build -t brood .
+```
+
+Run brood container. In followning command we used `--network="host"` this allows to Docker container to use localhost interface of your machine (https://docs.docker.com/network/host/)
+
+```bash
+docker run --name brood \
+  --network="host" \
+  --env-file="docker.env" \
+  -p 7474:7474/tcp \
+  -ti -d brood
+```
+
+Attach to container to see logs
+
+```bash
+docker container attach brood
+```
+
+#### Run server with Docker Compose
+
+123
 
 ### CLI
 

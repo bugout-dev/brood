@@ -190,10 +190,14 @@ tags
 ### VSCode ###
 .vscode
 
+# Git
+.git
+.github
+
 # Envionments
-.brood/
-.venv/
-.env/
+.brood
+.venv
+.env
 
 # Environment variables
 dev.env
@@ -202,7 +206,6 @@ prod.env
 brood.env
 docker.env
 .secrets
-.secrets/
 
 # Alembic migrations
 alembic.test.ini
@@ -210,3 +213,5 @@ alembic.dev.ini
 alembic.prod.ini
 alembic.brood.ini
 alembic.docker.ini
+
+Dockerfile
