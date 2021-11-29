@@ -200,18 +200,29 @@ tags
 .env
 
 # Environment variables
-dev.env
 test.env
+dev.env
 prod.env
-brood.env
-docker.env
+
+configs/test.env
+configs/dev.env
+configs/prod.env
+configs/brood.env
+configs/docker.env
+configs/docker.dev.env
+configs/docker.test.env
+configs/docker.prod.env
+configs/docker.brood.env
+
 .secrets
+.secrets/*
 
 # Alembic migrations
-alembic.test.ini
-alembic.dev.ini
-alembic.prod.ini
-alembic.brood.ini
-alembic.docker.ini
+configs/alembic.test.ini
+configs/alembic.dev.ini
+configs/alembic.prod.ini
+configs/alembic.brood.ini
+configs/alembic.docker.ini
 
 Dockerfile
+docker-compose.yml

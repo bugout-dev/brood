@@ -201,7 +201,11 @@ test.env
 prod.env
 brood.env
 docker.env
-.secrets
+docker.dev.env
+docker.test.dev
+docker.prod.env
+docker.brood.env
+
 .secrets/
 
 # Alembic migrations

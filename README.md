@@ -148,20 +148,20 @@ To set up Brood for your development, do the following:
 pip install -e .[dev]
 ```
 
-- Copy `alembic.sample.ini` to `alembic.dev.ini`
+- Copy `configs/alembic.sample.ini` to `configs/alembic.dev.ini`
 - Edit variable `sqlalchemy.url = <...>` into `alembic.dev.ini`
-- Copy `sample.env` to `dev.env`
+- Copy `configs/sample.env` to `configs/dev.env`
 - Edit in `dev.env` file BROOD_DB_URI and other variables.
 - Source environment variables
 
 ```
-source dev.env
+source configs/dev.env
 ```
 
 - Run alembic migration
 
 ```
-./alembic.sh -c alembic.dev.ini upgrade head
+./alembic.sh -c configs/alembic.dev.ini upgrade head
 ```
 
 Once you're ready with the installation, start the server:
@@ -172,31 +172,31 @@ Once you're ready with the installation, start the server:
 
 #### Run server with Docker
 
-To be able to run Brood with your existing local or development services as database, you need to build your own setup. **Be aware! The file `docker.env` lives inside your docker container!**
+To be able to run Brood with your existing local or development services as database, you need to build your own setup. **Be aware! The files with environment variables `docker.dev.env` lives inside your docker container!**
 
-- Copy `sample.env` to `docker.env`, or from your local config `dev.env` to `docker.env`
-- Edit in `docker.env` file `BROOD_DB_URI` and other variables if required
+- Copy `configs/sample.env` to `configs/docker.dev.env`, or use your local configs from `configs/dev.env` to `configs/docker.dev.env`
+- Edit in `docker.dev.env` file `BROOD_DB_URI` and other variables if required
 - Clean environment file from `export ` prefix and quotation marks to be able to use it with Docker
 
 ```bash
-sed --in-place 's|^export * ||' docker.env
-sed --in-place 's|"||g' docker.env
+sed --in-place 's|^export * ||' configs/docker.dev.env
+sed --in-place 's|"||g' configs/docker.dev.env
 ```
 
 Build container on your machine
 
 ```bash
-docker build -t brood .
+docker build -t brood-dev .
 ```
 
-Run brood container. In followning command we used `--network="host"` this allows to Docker container to use localhost interface of your machine (https://docs.docker.com/network/host/)
+Run brood container, with following command we specified `--network="host"` setting which allows to Docker container use localhost interface of your machine (https://docs.docker.com/network/host/)
 
 ```bash
-docker run --name brood \
+docker run --name brood-dev \
   --network="host" \
-  --env-file="docker.env" \
+  --env-file="configs/docker.dev.env" \
   -p 7474:7474/tcp \
-  -ti -d brood
+  -ti -d brood-dev
 ```
 
 Attach to container to see logs
@@ -207,7 +207,21 @@ docker container attach brood
 
 #### Run server with Docker Compose
 
-123
+If you want to deploy Brood in isolation against live services, then docker compose is your choice!
+
+- Run script `configs/docker_generate_env.sh` which prepare for you:
+  - `configs/docker.brood.env` with environment variables
+  - `configs/alembic.brood.ini` with postgresql uri
+
+```bash
+./configs/docker_generate_env.sh
+```
+
+- Run local setup
+
+```bash
+docker-compose up --build
+```
 
 ### CLI
 
