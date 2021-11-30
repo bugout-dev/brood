@@ -134,7 +134,7 @@ You can find a more detailed documentation on the API [here](https://auth.bugout
 
 ### Installation and setup
 
-To set up Brood for your development, do the following:
+To set up Brood for development, do the following:
 
 - Clone the git repository
 - Install postgresql (https://www.postgresql.org/download/linux/ubuntu/)
@@ -189,7 +189,7 @@ Build container on your machine
 docker build -t brood-dev .
 ```
 
-Run brood container, with following command we specified `--network="host"` setting which allows to Docker container use localhost interface of your machine (https://docs.docker.com/network/host/)
+Run `brood-dev` container, with following command we specified `--network="host"` setting which allows to Docker container use localhost interface of your machine (https://docs.docker.com/network/host/)
 
 ```bash
 docker run --name brood-dev \
@@ -202,7 +202,7 @@ docker run --name brood-dev \
 Attach to container to see logs
 
 ```bash
-docker container attach brood
+docker container attach brood-dev
 ```
 
 #### Run server with Docker Compose
@@ -221,6 +221,24 @@ If you want to deploy Brood in isolation against live services, then docker comp
 
 ```bash
 docker-compose up --build
+```
+
+### After setup
+
+Fresh server is not fully functional, in order to add additional functionality you need to create subscriptions, resources and etc.
+
+#### Groups
+
+To be able to create new groups, free subscription plan should be generated with record in kv_brood table:
+
+```bash
+python -m brood.cli plans create \
+  --name "Free plan" \
+  --description "free plan description" \
+  --default_units 5 \
+  --plan_type "seats" \
+  --public True \
+  --kv_key BUGOUT_GROUP_FREE_SUBSCRIPTION_PLAN
 ```
 
 ### CLI
