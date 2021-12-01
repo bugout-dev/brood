@@ -1,10 +1,10 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Prepare Brood API application for docker-compose use
 
 # Print help message
 function usage {
-  echo "Usage: $0 [-h] -d DATABASE_NAME"  
+  echo "Usage: $0 [-h] -d DATABASE_NAME"
   echo
   echo "CLI to generate environment variables"
   echo

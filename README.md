@@ -209,12 +209,12 @@ docker container attach brood-dev
 
 If you want to deploy Brood in isolation against live services, then docker compose is your choice!
 
-- Run script `configs/docker_generate_env.sh` which prepare for you:
+- Run script `configs/docker_generate_env.bash` which prepare for you:
   - `configs/docker.brood.env` with environment variables
   - `configs/alembic.brood.ini` with postgresql uri
 
 ```bash
-./configs/docker_generate_env.sh
+./configs/docker_generate_env.bash
 ```
 
 - Run local setup
