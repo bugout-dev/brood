@@ -17,10 +17,8 @@ FLAG_DATABASE_NAME="brood_dev"
 
 while getopts 'd:' flag; do
   case "${flag}" in
-    b) FLAG_DATABASE_NAME="${OPTARG}" ;;
+    d) FLAG_DATABASE_NAME="${OPTARG}" ;;
     h) usage
-      exit 1 ;;
-    *) usage
       exit 1 ;;
   esac
 done
