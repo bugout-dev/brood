@@ -14,9 +14,14 @@ fi
 
 ALEMBIC_CONFIG="$ALEMBIC_CONFIG" sh alembic.sh upgrade head
 
-# Preapre server to be full functional
-sh ./configs/docker_initial_setup.sh
+# Create free group subscription, to be able create new groups
+python -m brood.cli plans create \
+  --name "Free plan" \
+  --description "free plan description" \
+  --default_units 5 \
+  --plan_type "seats" \
+  --public True \
+  --kv_key BUGOUT_GROUP_FREE_SUBSCRIPTION_PLAN
 
 # Running dev.sh (from the directory from which this script was called)
 sh dev.sh
-
