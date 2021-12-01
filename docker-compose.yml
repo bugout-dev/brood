@@ -7,8 +7,13 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile
-    entrypoint: configs/docker_compose_entrypoint.sh
     image: brood:latest
+    entrypoint: ["/bin/sh","-c"]
+    command:
+    - |
+        ./configs/docker_init_migration.sh
+        ./configs/docker_init_plan.sh
+        ./dev.sh
     ports:
       - "127.0.0.1:7474:7474"
     # Specify environment file for compose setup
@@ -36,7 +41,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
-      POSTGRES_DB: brood_dev
+      POSTGRES_DB: db_dev
     healthcheck:
       test: ["CMD", "psql", "-U", "postgres", "-c", "SELECT 1;"]
       interval: 5s
