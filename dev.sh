@@ -5,15 +5,11 @@
 # for this project installed.
 set -e
 
-. /bugout/moonstream_app.env
-
 BROOD_HOST="${BROOD_HOST:-127.0.0.1}"
 BROOD_PORT="${BROOD_PORT:-7474}"
 BROOD_APP_DIR="${BROOD_APP_DIR:-$PWD}"
 BROOD_ASGI_APP="${BROOD_ASGI_APP:-brood.api:app}"
 BROOD_UVICORN_WORKERS="${BROOD_UVICORN_WORKERS:-2}"
-
-echo $MOONSTREAM_APPLICATION_ID
 
 uvicorn --reload \
   --port "$BROOD_PORT" \
