@@ -1,0 +1,50 @@
+# Compose version
+version: "3"
+
+services:
+  # Brood API application
+  brood:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    image: brood:latest
+    entrypoint: ["/bin/sh","-c"]
+    command:
+    - |
+        ./configs/docker_init_migration.sh
+        ./configs/docker_init_plan.sh
+        ./dev.sh
+    ports:
+      - "127.0.0.1:7474:7474"
+    # Specify environment file for compose setup
+    env_file: ./configs/docker.brood.env
+    environment:
+      ALEMBIC_CONFIG: ./configs/alembic.brood.ini
+      BROOD_HOST: 0.0.0.0
+      BROOD_PORT: 7474
+      BROOD_UVICORN_WORKERS: 1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://brood:7474/ping"]
+      interval: 5s
+      timeout: 1s
+      retries: 2
+      start_period: 2s
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # DB postgres application
+  db:
+    image: postgres:13
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: brood_dev
+    healthcheck:
+      test: ["CMD", "psql", "-U", "postgres", "-c", "SELECT 1;"]
+      interval: 5s
+      timeout: 1s
+      retries: 3
+      start_period: 2s

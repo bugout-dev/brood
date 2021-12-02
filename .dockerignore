@@ -190,27 +190,35 @@ tags
 ### VSCode ###
 .vscode
 
+# Git
+.git
+.github
+
 # Envionments
-.brood/
-.venv/
-.env/
+.brood
+.venv
+.env
 
 # Environment variables
-dev.env
 test.env
+dev.env
 prod.env
-brood.env
-docker.env
-docker.dev.env
-docker.test.dev
-docker.prod.env
-docker.brood.env
+
+configs/test.env
+configs/dev.env
+configs/prod.env
+configs/brood.env
+configs/docker.env
+configs/docker.dev.env
+configs/docker.test.env
+configs/docker.prod.env
 
 .secrets/
 
 # Alembic migrations
-alembic.test.ini
-alembic.dev.ini
-alembic.prod.ini
-alembic.brood.ini
-alembic.docker.ini
+configs/alembic.test.ini
+configs/alembic.dev.ini
+configs/alembic.prod.ini
+
+Dockerfile
+docker-compose.yml
