@@ -2,4 +2,4 @@
 Brood library and API version.
 """
 
-BROOD_VERSION = "0.2.0"
+BROOD_VERSION = "0.2.1"
