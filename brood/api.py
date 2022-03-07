@@ -1900,8 +1900,6 @@ async def list_applications_handler(
 
     try:
         applications = actions.get_applications(db_session, groups_ids=groups_ids)
-    except exceptions.ApplicationsNotFound:
-        raise HTTPException(status_code=404, detail="There are no applications")
     except Exception as e:
         raise HTTPException(status_code=500)
 
