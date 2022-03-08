@@ -342,7 +342,7 @@ def generate_verification_code(
     if randint_generator is None:
         randint_generator = randint
 
-    verification_code_int = randint_generator(0, 10 ** 6 - 1)
+    verification_code_int = randint_generator(0, 10**6 - 1)
     verification_code_raw = str(verification_code_int)
     verification_code = f"{'0'*(6 - len(verification_code_raw))}{verification_code_raw}"
     return verification_code
@@ -1652,9 +1652,6 @@ def get_applications(
         query = query.filter(Application.group_id.in_(groups_ids))
 
     applications = query.all()
-
-    if len(applications) == 0:
-        raise exceptions.ApplicationsNotFound("There are no applications found")
 
     return applications
 
