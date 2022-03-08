@@ -1653,9 +1653,6 @@ def get_applications(
 
     applications = query.all()
 
-    if len(applications) == 0:
-        raise exceptions.ApplicationsNotFound("There are no applications found")
-
     return applications
 
 
