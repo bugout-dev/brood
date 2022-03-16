@@ -384,7 +384,7 @@ async def find_user_handler(
     username: Optional[str] = Query(None),
     email: Optional[str] = Query(None),
     user_id: Optional[uuid.UUID] = Query(None),
-    application_id: uuid.UUID = Query(None),
+    application_id: Optional[uuid.UUID] = Query(None),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.UserResponse:
     """
