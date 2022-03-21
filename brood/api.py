@@ -371,8 +371,17 @@ async def get_user_handler(
     """
     Get current user.
     """
-    user_id = current_user.id
-    user = actions.get_user(session=db_session, user_id=user_id)
+    try:
+        user = actions.get_user(
+            session=db_session,
+            user_id=current_user.id,
+            application_id=current_user.application_id,
+        )
+    except actions.UserNotFound:
+        raise HTTPException(status_code=404, detail="User not found")
+    except Exception:
+        logger.error("Unhandled error")
+        raise HTTPException(status_code=500)
 
     return user
 
