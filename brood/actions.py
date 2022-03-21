@@ -483,7 +483,7 @@ def get_user(
             "In order to get user, at least one of username, email, or user_id must be specified"
         )
 
-    query = session.query(User)
+    query = session.query(User).filter(User.application_id == application_id)
 
     if username is not None:
         username = cast(str, username)
@@ -498,16 +498,17 @@ def get_user(
     if user_id is not None:
         query = query.filter(User.id == user_id)
 
-    if application_id is not None:
-        query = query.filter(User.application_id == application_id)
-
-    user = query.first()
-    if user is None:
+    users = query.all()
+    if len(users) == 0:
         raise UserNotFound(
-            f"Did not find user with filters username={username}, normalized_email={normalized_email}"
+            f"Did not find user with filters username={username}, normalized_email={normalized_email}, id={user_id} and application_id={application_id}"
+        )
+    if len(users) > 1:
+        raise Exception(
+            f"Too many results for user with filters username={username}, normalized_email={normalized_email}, id={user_id} and application_id={application_id}"
         )
 
-    return user
+    return users[0]
 
 
 def update_user(
