@@ -1,11 +1,10 @@
 stdargs @ { scm, ... }:
 
-scm.schema {
-    guid = "S0EWRO2U5R3QRV2G";
-    name = "resources";
+scm.revision {
+    guid = "R001COM1AP03N1JK";
+    name = "2022-08-04-resource_permissions";
     upgrade_sql = ./upgrade.sql;
     dependencies = [
-        <applications-S0TI8JF1EIYWHAPA>
         <2022-08-04-resources-R001COM0WJ7NLLA5>
     ];
 }

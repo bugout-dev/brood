@@ -7,6 +7,6 @@ scm.schema {
     dependencies = [
         <users-S0382XBF5ZCEJG69>
         <groups-S0A0GPZRCZWRH37E>
-        <2022-08-03-group_users-R001CMSXKU12ES6O>
+        <2022-08-04-group_users-R001COLZG2UP34U9>
     ];
 }

@@ -5,6 +5,6 @@ scm.schema {
     name = "kv_brood";
     upgrade_sql = ./upgrade.sql;
     dependencies = [
-        <2022-08-03-kv_brood-R001CMT09GIWDEA4>
+        <2022-08-04-kv_brood-R001COLZWCGS6LOE>
     ];
 }

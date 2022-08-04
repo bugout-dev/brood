@@ -5,10 +5,10 @@ scm.schema {
     name = "resource_holder_permissions";
     upgrade_sql = ./upgrade.sql;
     dependencies = [
-        <groups-S0A0GPZRCZWRH37E>
-        <resource_permissions-S0L3BK1JD0M0SAHU>
-        <resources-S0EWRO2U5R3QRV2G>
         <users-S0382XBF5ZCEJG69>
-        <2022-08-03-resource_holder_permissions-R001CMT1Z3GX71MN>
+        <resources-S0EWRO2U5R3QRV2G>
+        <resource_permissions-S0L3BK1JD0M0SAHU>
+        <groups-S0A0GPZRCZWRH37E>
+        <2022-08-04-resource_holder_permissions-R001COM42RUIPBMW>
     ];
 }

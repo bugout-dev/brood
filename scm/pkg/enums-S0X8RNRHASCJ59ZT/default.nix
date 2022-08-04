@@ -5,6 +5,6 @@ scm.schema {
     name = "enums";
     upgrade_sql = ./upgrade.sql;
     dependencies = [
-        <2022-08-03-enums-R001CMSOUYN49CGS>
+        <2022-08-04-enums-R001COLQQEME09H3>
     ];
 }

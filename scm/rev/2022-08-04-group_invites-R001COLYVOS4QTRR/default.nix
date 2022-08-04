@@ -1,11 +1,11 @@
 stdargs @ { scm, ... }:
 
-scm.schema {
-    guid = "S0382XBF5ZCEJG69";
-    name = "users";
+scm.revision {
+    guid = "R001COLYVOS4QTRR";
+    name = "2022-08-04-group_invites";
     upgrade_sql = ./upgrade.sql;
     dependencies = [
-        <applications-S0TI8JF1EIYWHAPA>
         <2022-08-04-users-R001COLV3XMNUS2V>
+        <2022-08-04-groups-R001COLWG9JG6BPL>
     ];
 }
