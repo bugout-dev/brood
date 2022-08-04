@@ -5,6 +5,7 @@ scm.schema {
     name = "user_group_limits";
     upgrade_sql = ./upgrade.sql;
     dependencies = [
+        <<users-S0382XBF5ZCEJG69>>
         <2022-08-03-user_group_limits-R001CMT9PG721TRI>
     ];
 }

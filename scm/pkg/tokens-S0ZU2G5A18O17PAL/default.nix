@@ -5,6 +5,7 @@ scm.schema {
     name = "tokens";
     upgrade_sql = ./upgrade.sql;
     dependencies = [
+        <users-S0382XBF5ZCEJG69>
         <2022-08-03-tokens-R001CMT9040OSR0Y>
     ];
 }

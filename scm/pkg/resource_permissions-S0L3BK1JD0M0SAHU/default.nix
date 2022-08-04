@@ -5,6 +5,7 @@ scm.schema {
     name = "resource_permissions";
     upgrade_sql = ./upgrade.sql;
     dependencies = [
+        <resources-S0EWRO2U5R3QRV2G>
         <2022-08-03-resource_permissions-R001CMT4E9EFB2E2>
     ];
 }
