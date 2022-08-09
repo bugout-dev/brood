@@ -15,8 +15,7 @@ let
             (getEnv "MDP_GIT")
             (fetchGit {
                 url = "git@github.com:bugout-dev/brood.git";
-                rev = "939065332bbbababd0590dae67c04256dd8cb731";
-                allRefs = true;
+                rev = "19d8581965d035cee9918bbb1e6b333a39422c2a";
             })
         ] ++ scm_repos;
     });
