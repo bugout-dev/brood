@@ -218,3 +218,5 @@ alembic.docker.ini
 # Schematic
 .schematic.env
 scm/srv/
+scm/pwfile
+
