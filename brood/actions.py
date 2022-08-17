@@ -881,7 +881,7 @@ def get_current_user_with_groups(
     objects = query.all()
     if len(objects) == 0:
         raise TokenNotFound(f"Token not found with ID: {token}")
-    
+
     active_token = objects[0][0]
     user = objects[0][1]
     groups = []
