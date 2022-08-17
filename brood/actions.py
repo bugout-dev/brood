@@ -873,20 +873,22 @@ def get_current_user_with_groups(
     query = (
         session.query(Token.active, User, Group, GroupUser)
         .join(User, User.id == Token.user_id)
-        .join(GroupUser, GroupUser.user_id == User.id)
-        .join(Group, Group.id == GroupUser.group_id)
+        .join(GroupUser, GroupUser.user_id == User.id, isouter=True)
+        .join(Group, Group.id == GroupUser.group_id, isouter=True)
         .filter(Token.id == token)
-        .filter(GroupUser.user_id == User.id)
         .group_by(Token.active, User, Group, GroupUser)
     )
     objects = query.all()
     if len(objects) == 0:
         raise TokenNotFound(f"Token not found with ID: {token}")
-
+    
     active_token = objects[0][0]
     user = objects[0][1]
     groups = []
     for object in objects:
+        # Skip if there are no groups
+        if object[2] is None:
+            continue
         if object[3].user_id != user.id:
             logger.error(
                 f"Unexpected group id: {object[2].id} fetched for user with id: {user.id}"
