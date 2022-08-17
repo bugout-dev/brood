@@ -810,13 +810,16 @@ async def get_group_children_handler(
 async def get_groups_handler(
     current_user: models.User = Depends(get_current_user),
     db_session=Depends(yield_db_session_from_env),
+    include_metrics: bool = Query(True),
 ) -> data.GroupUserListResponse:
     """
     Get list of groups user belongs to.
     """
     groups_list: Optional[List[data.GroupUserResponse]] = []
     try:
-        groups_list = actions.get_groups_for_user(db_session, user_id=current_user.id)
+        groups_list = actions.get_groups_for_user(
+            db_session, user_id=current_user.id, include_metrics=include_metrics
+        )
     except Exception as e:
         logger.error(f"Error getting list of groups for user: {str(e)}")
         raise HTTPException(status_code=500)
