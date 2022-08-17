@@ -33,12 +33,12 @@ async def get_current_user(
     return token_object.user
 
 
-async def current_user_extended(
+async def get_current_user_with_groups(
     token: UUID = Depends(oauth2_scheme),
     db_session=Depends(yield_db_session_from_env),
-) -> data.UserExtendedResponse:
+) -> data.UserWithGroupsResponse:
     try:
-        token_active, user_extended = actions.get_current_user_extended(
+        token_active, user_extended = actions.get_current_user_with_groups(
             session=db_session, token=token
         )
     except actions.TokenNotFound:

@@ -275,5 +275,5 @@ class ApplicationsListResponse(BaseModel):
     applications: List[ApplicationResponse] = Field(default_factory=list)
 
 
-class UserExtendedResponse(UserResponse):
+class UserWithGroupsResponse(UserResponse):
     groups: List[GroupUserResponse] = Field(default_factory=list)

@@ -864,9 +864,9 @@ def get_token(session: Session, token: uuid.UUID) -> Token:
     return token_object
 
 
-def get_current_user_extended(
+def get_current_user_with_groups(
     session: Session, token: uuid.UUID
-) -> Tuple[bool, data.UserExtendedResponse]:
+) -> Tuple[bool, data.UserWithGroupsResponse]:
     """
     Extend user data with groups for authentication middleware.
     """
@@ -903,7 +903,7 @@ def get_current_user_extended(
             )
         )
 
-    user_extended = data.UserExtendedResponse(
+    user_extended = data.UserWithGroupsResponse(
         user_id=user.id,
         username=user.username,
         first_name=user.first_name,
