@@ -1180,7 +1180,6 @@ def get_groups_for_user(
         .all()
     )
 
-
     groups_response = []
 
     for group in groups:

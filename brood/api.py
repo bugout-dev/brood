@@ -817,7 +817,9 @@ async def get_groups_handler(
     """
     groups_list: Optional[List[data.GroupUserResponse]] = []
     try:
-        groups_list = actions.get_groups_for_user(db_session, user_id=current_user.id, include_metrics=include_metrics)
+        groups_list = actions.get_groups_for_user(
+            db_session, user_id=current_user.id, include_metrics=include_metrics
+        )
     except Exception as e:
         logger.error(f"Error getting list of groups for user: {str(e)}")
         raise HTTPException(status_code=500)
