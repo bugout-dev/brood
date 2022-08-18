@@ -26,8 +26,34 @@ TEMPLATE_ID_MOONSTREAM_WELCOME_EMAIL = os.environ.get(
 )
 MOONSTREAM_APPLICATION_ID = os.environ.get("MOONSTREAM_APPLICATION_ID")
 
-DB_URI = os.environ.get("BROOD_DB_URI")
+# Database
+BROOD_DB_URI = os.environ.get("BROOD_DB_URI")
+if BROOD_DB_URI is None:
+    raise ValueError("BROOD_DB_URI environment variable not set")
+BROOD_DB_URI_READ_ONLY = os.environ.get("BROOD_DB_URI_READ_ONLY")
+if BROOD_DB_URI_READ_ONLY is None:
+    raise ValueError("BROOD_DB_URI_READ_ONLY environment variable not set")
 
+BROOD_POOL_SIZE_RAW = os.environ.get("BROOD_POOL_SIZE", 0)
+try:
+    if BROOD_POOL_SIZE_RAW is not None:
+        BROOD_POOL_SIZE = int(BROOD_POOL_SIZE_RAW)
+except:
+    raise Exception(f"Could not parse BROOD_POOL_SIZE as int: {BROOD_POOL_SIZE_RAW}")
+
+BROOD_DB_STATEMENT_TIMEOUT_MILLIS_RAW = os.environ.get(
+    "BROOD_DB_STATEMENT_TIMEOUT_MILLIS"
+)
+BROOD_DB_STATEMENT_TIMEOUT_MILLIS = 10000
+try:
+    if BROOD_DB_STATEMENT_TIMEOUT_MILLIS_RAW is not None:
+        BROOD_DB_STATEMENT_TIMEOUT_MILLIS = int(BROOD_DB_STATEMENT_TIMEOUT_MILLIS_RAW)
+except:
+    raise ValueError(
+        f"BROOD_DB_STATEMENT_TIMEOUT_MILLIS must be an integer: {BROOD_DB_STATEMENT_TIMEOUT_MILLIS_RAW}"
+    )
+
+# Bots
 BOT_INSTALLATION_TOKEN = os.environ.get("BUGOUT_BOT_INSTALLATION_TOKEN")
 BOT_INSTALLATION_TOKEN_HEADER_RAW = os.environ.get(
     "BUGOUT_BOT_INSTALLATION_TOKEN_HEADER"

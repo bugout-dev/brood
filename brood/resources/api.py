@@ -21,7 +21,7 @@ from . import exceptions
 from .version import BROOD_RESOURCES_VERSION
 from ..data import VersionResponse
 from .. import models as brood_models
-from ..external import yield_db_session_from_env
+from ..db import yield_db_session_from_env
 from ..middleware import get_current_user
 from ..settings import ORIGINS, DOCS_TARGET_PATH, BROOD_OPENAPI_LIST
 

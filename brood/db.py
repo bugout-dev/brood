@@ -1,0 +1,67 @@
+"""
+Connections to external services
+"""
+from sqlalchemy import create_engine
+from sqlalchemy.orm.session import Session, sessionmaker
+
+from .settings import (
+    BROOD_DB_URI,
+    BROOD_DB_URI_READ_ONLY,
+    BROOD_POOL_SIZE,
+    BROOD_DB_STATEMENT_TIMEOUT_MILLIS,
+)
+
+
+def create_brood_engine(url: str, pool_size: int, statement_timeout: int):
+    # Pooling: https://docs.sqlalchemy.org/en/14/core/pooling.html#sqlalchemy.pool.QueuePool
+    # Statement timeout: https://stackoverflow.com/a/44936982
+    return create_engine(
+        url=url,
+        pool_size=pool_size,
+        connect_args={"options": f"-c statement_timeout={statement_timeout}"},
+    )
+
+
+engine = create_brood_engine(
+    url=BROOD_DB_URI,
+    pool_size=BROOD_POOL_SIZE,
+    statement_timeout=BROOD_DB_STATEMENT_TIMEOUT_MILLIS,
+)
+SessionLocal = sessionmaker(bind=engine)
+
+
+def yield_db_session_from_env() -> Session:
+    """
+    Creates an active database session using configuration from the environment and yields it as
+    per FastAPI docs:
+    https://fastapi.tiangolo.com/tutorial/sql-databases/#create-a-dependency
+
+    Behaves identically to db_session_from_env in all other respects.
+    """
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+# Read only
+RO_engine = create_brood_engine(
+    url=BROOD_DB_URI_READ_ONLY,
+    pool_size=BROOD_POOL_SIZE,
+    statement_timeout=BROOD_DB_STATEMENT_TIMEOUT_MILLIS,
+)
+RO_SessionLocal = sessionmaker(bind=RO_engine)
+
+
+def yield_db_read_only_session() -> Session:
+    """
+    Yields read only database connection (created using environment variables).
+    As per FastAPI docs:
+    https://fastapi.tiangolo.com/tutorial/sql-databases/#create-a-dependency
+    """
+    session = RO_SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
