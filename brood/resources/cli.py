@@ -5,7 +5,7 @@ import argparse
 import json
 
 from .models import Resource
-from ..external import SessionLocal
+from ..db import SessionLocal
 
 
 def resources_list_handler(args: argparse.Namespace) -> None:

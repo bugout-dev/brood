@@ -35,7 +35,7 @@ from .middleware import (
     is_token_restricted_or_installation,
     get_current_user_or_installation,
 )
-from .external import yield_db_session_from_env
+from .db import yield_db_session_from_env
 from .version import BROOD_VERSION
 from .settings import (
     group_invite_link_from_env,

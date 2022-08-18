@@ -11,7 +11,7 @@ from . import actions
 from . import data
 from . import exceptions
 from . import subscriptions
-from .external import SessionLocal
+from .db import SessionLocal
 from .models import (
     User,
     Group,
