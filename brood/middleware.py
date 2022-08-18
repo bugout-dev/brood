@@ -28,6 +28,8 @@ async def get_current_user(
         token_object = actions.get_token(session=db_session, token=token)
     except actions.TokenNotFound:
         raise HTTPException(status_code=404, detail="Access token not found")
+    except Exception:
+        raise HTTPException(status_code=500)
     if not token_object.active:
         raise HTTPException(status_code=403, detail="Token has expired")
     return token_object.user
@@ -120,4 +122,6 @@ async def is_token_restricted(
         token_object = actions.get_token(session=db_session, token=token)
     except actions.TokenNotFound:
         raise HTTPException(status_code=404, detail="Access token not found")
+    except Exception:
+        raise HTTPException(status_code=500)
     return token_object.restricted
