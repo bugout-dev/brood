@@ -29,7 +29,7 @@ engine = create_brood_engine(
     pool_size=BROOD_POOL_SIZE,
     statement_timeout=BROOD_DB_STATEMENT_TIMEOUT_MILLIS,
 )
-SessionLocal = sessionmaker(bind=engine)
+SessionLocal = sessionmaker(autoflush=False, bind=engine)
 
 
 def yield_db_session_from_env() -> Session:
@@ -53,7 +53,7 @@ RO_engine = create_brood_engine(
     pool_size=BROOD_POOL_SIZE,
     statement_timeout=BROOD_DB_STATEMENT_TIMEOUT_MILLIS,
 )
-RO_SessionLocal = sessionmaker(bind=RO_engine)
+RO_SessionLocal = sessionmaker(autoflush=False, bind=RO_engine)
 
 
 def yield_db_read_only_session() -> Session:
