@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Union
 from uuid import UUID
 
@@ -14,6 +15,8 @@ from . import models
 from .db import yield_db_read_only_session
 from .settings import BOT_INSTALLATION_TOKEN, BOT_INSTALLATION_TOKEN_HEADER
 
+logger = logging.getLogger(__name__)
+
 # Login implementation follows:
 # https://fastapi.tiangolo.com/tutorial/security/simple-oauth2/
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -29,6 +32,7 @@ async def get_current_user(
     except actions.TokenNotFound:
         raise HTTPException(status_code=404, detail="Access token not found")
     except Exception:
+        logger.error("Unhandled exception at get_current_user")
         raise HTTPException(status_code=500)
     if not token_object.active:
         raise HTTPException(status_code=403, detail="Token has expired")
@@ -46,6 +50,7 @@ async def get_current_user_with_groups(
     except actions.TokenNotFound:
         raise HTTPException(status_code=404, detail="Access token not found")
     except Exception:
+        logger.error("Unhandled exception at get_current_user_with_groups")
         raise HTTPException(status_code=500)
     if not token_active:
         raise HTTPException(status_code=403, detail="Token has expired")
@@ -123,5 +128,6 @@ async def is_token_restricted(
     except actions.TokenNotFound:
         raise HTTPException(status_code=404, detail="Access token not found")
     except Exception:
+        logger.error("Unhandled exception at is_token_restricted")
         raise HTTPException(status_code=500)
     return token_object.restricted

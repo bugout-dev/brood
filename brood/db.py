@@ -1,6 +1,8 @@
 """
 Connections to external services
 """
+from typing import Optional
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm.session import Session, sessionmaker
 
@@ -12,7 +14,7 @@ from .settings import (
 )
 
 
-def create_brood_engine(url: str, pool_size: int, statement_timeout: int):
+def create_brood_engine(url: Optional[str], pool_size: int, statement_timeout: int):
     # Pooling: https://docs.sqlalchemy.org/en/14/core/pooling.html#sqlalchemy.pool.QueuePool
     # Statement timeout: https://stackoverflow.com/a/44936982
     return create_engine(
