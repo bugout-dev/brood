@@ -21,8 +21,8 @@ from . import exceptions
 from .version import BROOD_RESOURCES_VERSION
 from ..data import VersionResponse
 from .. import models as brood_models
-from ..db import yield_db_session_from_env
-from ..middleware import get_current_user
+from ..db import yield_db_session_from_env, yield_db_read_only_session
+from ..middleware import get_current_user, get_current_user_with_groups
 from ..settings import ORIGINS, DOCS_TARGET_PATH, BROOD_OPENAPI_LIST
 
 SUBMODULE_NAME = "resources"
@@ -126,8 +126,8 @@ async def create_resource_handler(
 @app.get("/", tags=["resources"], response_model=data.ResourcesListResponse)
 async def get_resources_list_handler(
     request: Request,
-    current_user: brood_models.User = Depends(get_current_user),
-    db_session=Depends(yield_db_session_from_env),
+    current_user: brood_models.User = Depends(get_current_user_with_groups),
+    db_session=Depends(yield_db_read_only_session),
 ) -> data.ResourcesListResponse:
     """
     Get a list of available resources for the user.
@@ -141,12 +141,7 @@ async def get_resources_list_handler(
         del params["application_id"]
 
     try:
-        group_users_list = (
-            db_session.query(brood_models.GroupUser)
-            .filter(brood_models.GroupUser.user_id == current_user.id)
-            .all()
-        )
-        user_groups_ids = [group.group_id for group in group_users_list]
+        user_groups_ids = [group.group_id for group in current_user.groups]
         resources = actions.get_list_of_resources(
             db_session, current_user.id, user_groups_ids, params, application_id
         )
