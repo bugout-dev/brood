@@ -15,7 +15,12 @@ from .settings import (
 )
 
 
-def create_brood_engine(url: Optional[str], pool_size: int, statement_timeout: int, pool_recycle: int = BROOD_DB_POOL_RECYCLE_SECONDS):
+def create_brood_engine(
+    url: Optional[str],
+    pool_size: int,
+    statement_timeout: int,
+    pool_recycle: int = BROOD_DB_POOL_RECYCLE_SECONDS,
+):
     # Pooling: https://docs.sqlalchemy.org/en/14/core/pooling.html#sqlalchemy.pool.QueuePool
     # Statement timeout: https://stackoverflow.com/a/44936982
     return create_engine(
@@ -24,6 +29,7 @@ def create_brood_engine(url: Optional[str], pool_size: int, statement_timeout: i
         pool_recycle=pool_recycle,
         connect_args={"options": f"-c statement_timeout={statement_timeout}"},
     )
+
 
 engine = create_brood_engine(
     url=BROOD_DB_URI,
