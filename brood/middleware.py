@@ -1,59 +1,193 @@
+import base64
+import json
 import logging
-from typing import Optional, Union
+from typing import Dict, Optional, Tuple, Union
 from uuid import UUID
 
-from fastapi import (
-    Depends,
-    HTTPException,
-    Request,
-)
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Request
+from fastapi.exceptions import HTTPException
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
+from fastapi.security import OAuth2
+from fastapi.security.utils import get_authorization_scheme_param
+from starlette.status import HTTP_401_UNAUTHORIZED
+from web3auth.auth import MoonstreamRegistration, to_checksum_address, verify
+from web3auth.exceptions import MoonstreamVerificationError
 
-from . import actions
-from . import data
-from . import models
+from . import actions, data, models
 from .db import yield_db_read_only_session
 from .settings import BOT_INSTALLATION_TOKEN, BOT_INSTALLATION_TOKEN_HEADER
 
 logger = logging.getLogger(__name__)
 
+
+class OAuth2BearerOrSignature(OAuth2):
+    """
+    Extended FastAPI OAuth2 middleware to support Bearer token
+    and Moonstream Web3 base64 signature in one request.
+    """
+
+    def __init__(
+        self,
+        tokenUrl: str,
+        scheme_name: Optional[str] = None,
+        scopes: Optional[Dict[str, str]] = None,
+        description: Optional[str] = None,
+        auto_error: bool = True,
+    ):
+        if not scopes:
+            scopes = {}
+        flows = OAuthFlowsModel(password={"tokenUrl": tokenUrl, "scopes": scopes})
+        super().__init__(
+            flows=flows,
+            scheme_name=scheme_name,
+            description=description,
+            auto_error=auto_error,
+        )
+
+    async def __call__(self, request: Request) -> Tuple[Optional[str], Optional[str]]:
+        authorization: str = request.headers.get("Authorization")
+        scheme, param = get_authorization_scheme_param(authorization)
+        if not authorization or (
+            scheme.lower() != "moonstream" and scheme.lower() != "bearer"
+        ):
+            if self.auto_error:
+                raise HTTPException(
+                    status_code=HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "moonstream/bearer"},
+                )
+            else:
+                return None, None
+        return param, scheme.lower()
+
+
 # Login implementation follows:
 # https://fastapi.tiangolo.com/tutorial/security/simple-oauth2/
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-oauth2_scheme_manual = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
+oauth2_scheme = OAuth2BearerOrSignature(tokenUrl="token")
+oauth2_scheme_manual = OAuth2BearerOrSignature(tokenUrl="token", auto_error=False)
 
 
 async def get_current_user(
-    token: UUID = Depends(oauth2_scheme),
+    oauth2: Tuple[UUID, str] = Depends(oauth2_scheme),
     db_session=Depends(yield_db_read_only_session),
-) -> models.User:
-    try:
-        token_object = actions.get_token(session=db_session, token=token)
-    except actions.TokenNotFound:
+) -> data.UserResponse:
+    """
+    Middleware returns user if its token or web3 signature verified.
+    """
+    token = oauth2[0]
+    scheme = oauth2[1]
+    if token is None or token == "":
         raise HTTPException(status_code=404, detail="Access token not found")
+
+    try:
+        if scheme == "moonstream":
+            payload_json = base64.decodebytes(token.encode()).decode("utf-8")
+            payload = json.loads(payload_json)
+            verified = verify(
+                authorization_payload=payload, schema=MoonstreamRegistration
+            )
+            if not verified:
+                logger.info("Moonstream authorization verification error")
+                raise MoonstreamVerificationError()
+            web3_address = payload.get("address")
+            if web3_address is None:
+                logger.error("Web3 address in payload could not be None")
+                raise Exception()
+            web3_address = to_checksum_address(web3_address)
+            user = actions.get_user(session=db_session, web3_address=web3_address)
+
+        elif scheme == "bearer":
+            is_token_active, user = actions.get_current_user_by_token(
+                session=db_session, token=token
+            )
+            if not is_token_active:
+                raise actions.TokenNotActive("Access token not active")
+        else:
+            logger.error(f"Unaccepted authorization scheme {scheme}")
+            raise Exception()
+
+    except actions.TokenNotFound as e:
+        logger.info(e)
+        raise HTTPException(status_code=404, detail="Access token not found")
+    except actions.TokenNotActive as e:
+        logger.info(e)
+        raise HTTPException(status_code=404, detail="Access token not active")
+    except actions.UserNotFound as e:
+        logger.info(e)
+        raise HTTPException(status_code=403, detail="User authorization not found")
+    except actions.UserInvalidParameters as e:
+        logger.info(e)
+        raise HTTPException(status_code=500)
+    except MoonstreamVerificationError:
+        raise HTTPException(status_code=403, detail="Signature not verified")
     except Exception:
         logger.error("Unhandled exception at get_current_user")
         raise HTTPException(status_code=500)
-    if not token_object.active:
-        raise HTTPException(status_code=403, detail="Token has expired")
-    return token_object.user
+
+    return user
 
 
 async def get_current_user_with_groups(
-    token: UUID = Depends(oauth2_scheme),
+    oauth2: Tuple[UUID, str] = Depends(oauth2_scheme),
     db_session=Depends(yield_db_read_only_session),
 ) -> data.UserWithGroupsResponse:
-    try:
-        token_active, user_extended = actions.get_current_user_with_groups(
-            session=db_session, token=token
-        )
-    except actions.TokenNotFound:
+    """
+    Middleware returns user with groups it belongs if its token or web3 signature verified.
+    """
+    token = oauth2[0]
+    scheme = oauth2[1]
+    if token is None or token == "":
         raise HTTPException(status_code=404, detail="Access token not found")
+
+    try:
+        if scheme == "moonstream":
+            payload_json = base64.decodebytes(token.encode()).decode("utf-8")
+            payload = json.loads(payload_json)
+            verified = verify(
+                authorization_payload=payload, schema=MoonstreamRegistration
+            )
+            if not verified:
+                logger.info("Moonstream authorization verification error")
+                raise MoonstreamVerificationError()
+            web3_address = payload.get("address")
+            if web3_address is None:
+                logger.error("Web3 address in payload could not be None")
+                raise Exception()
+            web3_address = to_checksum_address(web3_address)
+            user_extended = actions.get_user_with_groups(
+                session=db_session, web3_address=web3_address
+            )
+
+        elif scheme == "bearer":
+            (
+                is_token_active,
+                user_extended,
+            ) = actions.get_current_user_with_groups_by_token(
+                session=db_session, token=token
+            )
+            if not is_token_active:
+                raise actions.TokenNotActive("Access token not active")
+        else:
+            logger.error(f"Unaccepted authorization scheme {scheme}")
+            raise Exception()
+
+    except actions.TokenNotFound as e:
+        logger.info(e)
+        raise HTTPException(status_code=404, detail="Access token not found")
+    except actions.TokenNotActive as e:
+        logger.info(e)
+        raise HTTPException(status_code=404, detail="Access token not active")
+    except actions.UserNotFound as e:
+        logger.info(e)
+        raise HTTPException(status_code=403, detail="User authorization not found")
+    except actions.UserInvalidParameters as e:
+        logger.info(e)
+        raise HTTPException(status_code=500)
+    except MoonstreamVerificationError:
+        raise HTTPException(status_code=403, detail="Signature not verified")
     except Exception:
         logger.error("Unhandled exception at get_current_user_with_groups")
         raise HTTPException(status_code=500)
-    if not token_active:
-        raise HTTPException(status_code=403, detail="Token has expired")
 
     return user_extended
 
@@ -84,13 +218,18 @@ def autogenerated_user_token_check(request: Request) -> bool:
 
 async def get_current_user_or_installation(
     request: Request,
-    token: UUID = Depends(oauth2_scheme_manual),
+    oauth2: Tuple[UUID, str] = Depends(oauth2_scheme_manual),
     db_session=Depends(yield_db_read_only_session),
 ) -> Union[models.User, bool]:
     """
     Allow access if Bugout installation token provided, if not
     check user by default.
     """
+    token = oauth2[0]
+    scheme = oauth2[1]
+    if scheme != "bearer":
+        raise HTTPException(status_code=400, detail="Unaccepted scheme")
+
     autogenerated_user = autogenerated_user_token_check(request)
     if autogenerated_user is True:
         return True
@@ -103,12 +242,17 @@ async def get_current_user_or_installation(
 
 async def is_token_restricted_or_installation(
     request: Request,
-    token: UUID = Depends(oauth2_scheme_manual),
+    oauth2: Tuple[UUID, str] = Depends(oauth2_scheme_manual),
     db_session=Depends(yield_db_read_only_session),
 ) -> bool:
     """
     Allow access if Bugout installation provided.
     """
+    token = oauth2[0]
+    scheme = oauth2[1]
+    if scheme != "bearer":
+        raise HTTPException(status_code=400, detail="Unaccepted scheme")
+
     autogenerated_user = autogenerated_user_token_check(request)
     if autogenerated_user is True:
         return False  # Return token.restricted = False
@@ -120,9 +264,14 @@ async def is_token_restricted_or_installation(
 
 
 async def is_token_restricted(
-    token: UUID = Depends(oauth2_scheme),
+    oauth2: Tuple[UUID, str] = Depends(oauth2_scheme),
     db_session=Depends(yield_db_read_only_session),
 ) -> bool:
+    token = oauth2[0]
+    scheme = oauth2[1]
+    if scheme != "bearer":
+        raise HTTPException(status_code=400, detail="Unaccepted scheme")
+
     try:
         token_object = actions.get_token(session=db_session, token=token)
     except actions.TokenNotFound:

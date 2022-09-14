@@ -2,7 +2,7 @@
 The Brood HTTP API
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import uuid
 
 from fastapi import (
@@ -240,7 +240,7 @@ async def create_token_restricted_handler(
 
 @app.delete("/token", tags=["tokens"])
 async def delete_token_handler(
-    access_token: uuid.UUID = Depends(oauth2_scheme),
+    oauth2: Tuple[uuid.UUID, str] = Depends(oauth2_scheme),
     target_token: Optional[uuid.UUID] = Form(None),
     db_session=Depends(yield_db_session_from_env),
 ) -> uuid.UUID:
@@ -249,6 +249,10 @@ async def delete_token_handler(
 
     - **target_token** (uuid, null): Token ID to revoke
     """
+    access_token = oauth2[0]
+    scheme = oauth2[1]
+    if scheme != "bearer":
+        raise HTTPException(status_code=400, detail="Unaccepted scheme")
     try:
         token = actions.revoke_token(
             session=db_session, token=access_token, target=target_token
