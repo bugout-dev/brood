@@ -10,8 +10,8 @@ from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.status import HTTP_401_UNAUTHORIZED
-from web3auth.auth import MoonstreamRegistration, to_checksum_address, verify
-from web3auth.exceptions import MoonstreamVerificationError
+from web3login.auth import MoonstreamRegistration, to_checksum_address, verify
+from web3login.exceptions import MoonstreamVerificationError
 
 from . import actions, data, models
 from .db import yield_db_read_only_session

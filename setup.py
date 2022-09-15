@@ -22,6 +22,7 @@ setup(
         "sqlalchemy>=1.4.26",
         "stripe>=2.61.0",
         "uvicorn>=0.15.0",
+        "web3login>=0.0.1",
     ],
     extras_require={
         "dev": ["alembic>=1.7.4", "black", "isort", "mypy"],
