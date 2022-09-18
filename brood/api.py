@@ -340,6 +340,7 @@ async def get_tokens_handler(
     active: bool = Query(None),
     token_type: models.TokenType = Query(None),
     restricted: bool = Query(None),
+    db_session=Depends(yield_db_session_from_env),
 ) -> Dict[str, Any]:
     """
     Get list of tokens for current user.
@@ -354,7 +355,7 @@ async def get_tokens_handler(
             detail="Restricted tokens are not authorized to list user tokens.",
         )
 
-    tokens = current_user.tokens
+    tokens = actions.get_tokens(session=db_session, user_id=current_user.id)
     if active is not None:
         tokens = list(filter(lambda token: token.active == active, tokens))
     if token_type is not None:

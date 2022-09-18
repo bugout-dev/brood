@@ -1084,6 +1084,14 @@ def get_token(session: Session, token: uuid.UUID) -> Token:
     return token_object
 
 
+def get_tokens(session: Session, user_id: uuid.UUID) -> List[Token]:
+    """
+    Retrieve the list of tokens for user.
+    """
+    objects = session.query(Token).filter(Token.user_id == user_id).all()
+    return objects
+
+
 def update_token(
     session: Session,
     token: uuid.UUID,
