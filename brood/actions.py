@@ -461,7 +461,7 @@ def create_user(
     if signature is not None:
         payload_json = base64.decodebytes(signature.encode()).decode("utf-8")
         payload = json.loads(payload_json)
-        moonstream_schema: Any = MoonstreamRegistration # mypy hell
+        moonstream_schema: Any = MoonstreamRegistration  # mypy hell
         verified = verify(authorization_payload=payload, schema=moonstream_schema)
         if not verified:
             logger.info("Moonstream registration verification error")

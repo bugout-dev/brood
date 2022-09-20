@@ -85,10 +85,8 @@ async def get_current_user(
         if scheme == "moonstream":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
-            moonstream_schema: Any = MoonstreamRegistration # mypy hell
-            verified = verify(
-                authorization_payload=payload, schema=moonstream_schema
-            )
+            moonstream_schema: Any = MoonstreamRegistration  # mypy hell
+            verified = verify(authorization_payload=payload, schema=moonstream_schema)
             if not verified:
                 logger.info("Moonstream verification error")
                 raise MoonstreamVerificationError()
@@ -106,8 +104,9 @@ async def get_current_user(
             if not is_token_active:
                 raise actions.TokenNotActive("Access token not active")
         else:
-            logger.error(f"Unaccepted authorization scheme {scheme}")
-            raise Exception()
+            raise HTTPException(
+                status_code=401, detail="Unaccepted authorization scheme"
+            )
 
     except actions.TokenNotFound as e:
         logger.info(e)
@@ -160,10 +159,8 @@ async def get_current_user_with_groups(
         if scheme == "moonstream":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
-            moonstream_schema: Any = MoonstreamRegistration # mypy hell
-            verified = verify(
-                authorization_payload=payload, schema=moonstream_schema
-            )   
+            moonstream_schema: Any = MoonstreamRegistration  # mypy hell
+            verified = verify(authorization_payload=payload, schema=moonstream_schema)
             if not verified:
                 logger.info("Moonstream authorization verification error")
                 raise MoonstreamVerificationError()
@@ -186,8 +183,9 @@ async def get_current_user_with_groups(
             if not is_token_active:
                 raise actions.TokenNotActive("Access token not active")
         else:
-            logger.error(f"Unaccepted authorization scheme {scheme}")
-            raise Exception()
+            raise HTTPException(
+                status_code=401, detail="Unaccepted authorization scheme"
+            )
 
     except actions.TokenNotFound as e:
         logger.info(e)
