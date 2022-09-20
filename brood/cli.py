@@ -65,12 +65,14 @@ def users_create_handler(args: argparse.Namespace) -> None:
     """
     session = SessionLocal()
     try:
-        user = actions.create_user(session, args.username, args.email, args.password)
-
-        if args.verified:
-            user.verified = True
-            session.add(user)
-            session.commit()
+        user = actions.create_user(
+            session=session,
+            username=args.username,
+            email=args.email,
+            password=args.password,
+            signature=args.signature,
+            is_verify=args.verified,
+        )
 
         print_user(user)
     finally:
@@ -704,14 +706,15 @@ def main() -> None:
     parser_users_create.add_argument(
         "-e",
         "--email",
-        required=True,
         help="Email of the user to create",
     )
     parser_users_create.add_argument(
         "-p",
         "--password",
-        required=True,
         help="Password of the user to create",
+    )
+    parser_users_create.add_argument(
+        "-s", "--signature", help="Web3 signature of the user"
     )
     parser_users_create.add_argument(
         "--verified",

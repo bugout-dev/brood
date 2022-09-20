@@ -25,6 +25,14 @@ class SubscriptionPlanType(Enum):
     events = "events"
 
 
+class RequestDependencyResponse(BaseModel):
+    """
+    Model for __call__ response of RequestDependency Injection class.
+    """
+
+    auth_scheme: Optional[str]
+
+
 class PingResponse(BaseModel):
     """
     Schema for ping response
