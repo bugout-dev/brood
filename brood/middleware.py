@@ -1,7 +1,7 @@
 import base64
 import json
 import logging
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
@@ -13,7 +13,7 @@ from starlette.status import HTTP_401_UNAUTHORIZED
 from web3login.auth import MoonstreamRegistration, to_checksum_address, verify
 from web3login.exceptions import MoonstreamVerificationError
 
-from . import actions, data, models
+from . import actions, data
 from .db import yield_db_read_only_session
 from .settings import BOT_INSTALLATION_TOKEN, BOT_INSTALLATION_TOKEN_HEADER
 
@@ -85,11 +85,9 @@ async def get_current_user(
         if scheme == "moonstream":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
-            if not isinstance(MoonstreamRegistration, MoonstreamRegistration):
-                # Mypy hell
-                raise HTTPException(status_code=500)
+            moonstream_schema: Any = MoonstreamRegistration # mypy hell
             verified = verify(
-                authorization_payload=payload, schema=MoonstreamRegistration
+                authorization_payload=payload, schema=moonstream_schema
             )
             if not verified:
                 logger.info("Moonstream verification error")
@@ -162,12 +160,10 @@ async def get_current_user_with_groups(
         if scheme == "moonstream":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
-            if not isinstance(MoonstreamRegistration, MoonstreamRegistration):
-                # Mypy hell
-                raise HTTPException(status_code=500)
+            moonstream_schema: Any = MoonstreamRegistration # mypy hell
             verified = verify(
-                authorization_payload=payload, schema=MoonstreamRegistration
-            )
+                authorization_payload=payload, schema=moonstream_schema
+            )   
             if not verified:
                 logger.info("Moonstream authorization verification error")
                 raise MoonstreamVerificationError()
