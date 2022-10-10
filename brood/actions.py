@@ -719,14 +719,14 @@ def get_current_user_with_groups_by_token(
     objects = query.all()
     if len(objects) == 0:
         raise TokenNotFound("Token not found")
-    if len(objects) > 1:
-        logger.error(f"Found several users with token id: {token}")
-        raise Exception("Found several users")
 
     active_token = objects[0][0]
     user = objects[0][1]
     groups = []
     for object in objects:
+        if object[1].id != user.id:
+            logger.error(f"Found several users with token id: {token}")
+            raise Exception("Found several users")
         # Skip if there are no groups
         if object[2] is None:
             continue
