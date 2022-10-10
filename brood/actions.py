@@ -19,7 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.session import Session
-from web3login.auth import MoonstreamRegistration, to_checksum_address, verify
+from web3login.auth import to_checksum_address, verify
 from web3login.exceptions import MoonstreamVerificationError
 
 from . import data, exceptions, subscriptions
@@ -461,8 +461,7 @@ def create_user(
     if signature is not None:
         payload_json = base64.decodebytes(signature.encode()).decode("utf-8")
         payload = json.loads(payload_json)
-        moonstream_schema: Any = MoonstreamRegistration  # mypy hell
-        verified = verify(authorization_payload=payload, schema=moonstream_schema)
+        verified = verify(authorization_payload=payload, schema="registration")
         if not verified:
             logger.info("Moonstream registration verification error")
             raise MoonstreamVerificationError()

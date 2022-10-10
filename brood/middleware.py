@@ -1,64 +1,21 @@
 import base64
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.exceptions import HTTPException
-from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
-from fastapi.security import OAuth2
 from fastapi.security.utils import get_authorization_scheme_param
-from starlette.status import HTTP_401_UNAUTHORIZED
-from web3login.auth import MoonstreamRegistration, to_checksum_address, verify
+from web3login.auth import to_checksum_address, verify
 from web3login.exceptions import MoonstreamVerificationError
+from web3login.middlewares.fastapi import OAuth2BearerOrSignature
 
 from . import actions, data
 from .db import yield_db_read_only_session
 from .settings import BOT_INSTALLATION_TOKEN, BOT_INSTALLATION_TOKEN_HEADER
 
 logger = logging.getLogger(__name__)
-
-
-class OAuth2BearerOrSignature(OAuth2):
-    """
-    Extended FastAPI OAuth2 middleware to support Bearer token
-    and Moonstream Web3 base64 signature in one request.
-    """
-
-    def __init__(
-        self,
-        tokenUrl: str,
-        scheme_name: Optional[str] = None,
-        scopes: Optional[Dict[str, str]] = None,
-        description: Optional[str] = None,
-        auto_error: bool = True,
-    ):
-        if not scopes:
-            scopes = {}
-        flows = OAuthFlowsModel(password={"tokenUrl": tokenUrl, "scopes": scopes})
-        super().__init__(
-            flows=flows,
-            scheme_name=scheme_name,
-            description=description,
-            auto_error=auto_error,
-        )
-
-    async def __call__(self, request: Request) -> Optional[str]:
-        authorization: str = request.headers.get("Authorization")
-        scheme, param = get_authorization_scheme_param(authorization)
-        if not authorization or (
-            scheme.lower() != "moonstream" and scheme.lower() != "bearer"
-        ):
-            if self.auto_error:
-                raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED,
-                    detail="Not authenticated",
-                    headers={"WWW-Authenticate": "moonstream/bearer"},
-                )
-            else:
-                return None
-        return param
 
 
 # Login implementation follows:
@@ -85,8 +42,7 @@ async def get_current_user(
         if scheme == "moonstream":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
-            moonstream_schema: Any = MoonstreamRegistration  # mypy hell
-            verified = verify(authorization_payload=payload, schema=moonstream_schema)
+            verified = verify(authorization_payload=payload, schema="registration")
             if not verified:
                 logger.info("Moonstream verification error")
                 raise MoonstreamVerificationError()
@@ -159,8 +115,7 @@ async def get_current_user_with_groups(
         if scheme == "moonstream":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
-            moonstream_schema: Any = MoonstreamRegistration  # mypy hell
-            verified = verify(authorization_payload=payload, schema=moonstream_schema)
+            verified = verify(authorization_payload=payload, schema="registration")
             if not verified:
                 logger.info("Moonstream authorization verification error")
                 raise MoonstreamVerificationError()
