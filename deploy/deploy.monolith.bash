@@ -14,8 +14,8 @@ PREFIX_WARN="${C_YELLOW}[WARN]${C_RESET} [$(date +%d-%m\ %T)]"
 PREFIX_CRIT="${C_RED}[CRIT]${C_RESET} [$(date +%d-%m\ %T)]"
 
 # Main
-APP_DIR="${APP_DIR:-/home/ubuntu/brood}"
 AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
+APP_DIR="${APP_DIR:-/home/ubuntu/brood}"
 PYTHON_ENV_DIR="${PYTHON_ENV_DIR:-/home/ubuntu/brood-env}"
 PYTHON="${PYTHON_ENV_DIR}/bin/python"
 PIP="${PYTHON_ENV_DIR}/bin/pip"
@@ -26,7 +26,8 @@ PARAMETERS_ENV_PATH="${SECRETS_DIR}/app.env"
 AWS_SSM_PARAMETER_PATH="${AWS_SSM_PARAMETER_PATH:-/brood/prod}"
 
 # API server service file
-SERVICE_FILE="${SCRIPT_DIR}/brood.monolith.service"
+BROOD_SOURCE_SERVICE_FILE="brood.monolith.service"
+BROOD_SERVICE_FILE="brood.service"
 
 set -eu
 
@@ -48,9 +49,13 @@ AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" "${PYTHON}" "${PARAMETERS_SCRIPT}" "$
 
 echo
 echo
-echo -e "${PREFIX_INFO} Replacing existing Brood service definition with ${SERVICE_FILE}"
-chmod 644 "${SERVICE_FILE}"
-cp "${SERVICE_FILE}" /etc/systemd/system/brood.service
-systemctl daemon-reload
-systemctl restart brood.service
-systemctl status brood.service
+echo -e "${PREFIX_INFO} Set correct permissions for app.env"
+chmod 600 "${PARAMETERS_ENV_PATH}"
+
+echo
+echo
+echo -e "${PREFIX_INFO} Replacing existing Brood service definition with ${BROOD_SERVICE_FILE}"
+chmod 644 "${SCRIPT_DIR}/${BROOD_SOURCE_SERVICE_FILE}"
+cp "${SCRIPT_DIR}/${BROOD_SOURCE_SERVICE_FILE}" "/home/ubuntu/.config/systemd/user/${BROOD_SERVICE_FILE}"
+XDG_RUNTIME_DIR="/run/user/$UID" systemctl --user daemon-reload
+XDG_RUNTIME_DIR="/run/user/$UID" systemctl --user restart "${BROOD_SERVICE_FILE}"
