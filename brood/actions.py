@@ -629,11 +629,6 @@ def get_user_with_groups(
             f"Did not find user with filters username: {username}, email: {email}, "
             f"id: {user_id}, application_id: {application_id} and web3_address: {web3_address}"
         )
-    if len(objects) > 1:
-        raise Exception(
-            f"Too many results for user with filters username: {username}, email: {email}, "
-            f"id: {user_id} and application_id: {application_id} and web3_address: {web3_address}"
-        )
 
     user = objects[0][0]
     groups = []
