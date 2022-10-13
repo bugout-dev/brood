@@ -3,6 +3,8 @@ from typing import Optional
 
 import stripe  # type: ignore
 
+APPLICATION_NAME = "brood"
+
 RAW_ORIGIN = os.environ.get("BROOD_CORS_ALLOWED_ORIGINS")
 if RAW_ORIGIN is None:
     raise ValueError(

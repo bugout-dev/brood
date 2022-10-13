@@ -1,27 +1,30 @@
 import base64
 import json
 import logging
-from typing import Any, Optional
+from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.exceptions import HTTPException
 from fastapi.security.utils import get_authorization_scheme_param
 from web3login.auth import to_checksum_address, verify
-from web3login.exceptions import MoonstreamVerificationError
-from web3login.middlewares.fastapi import OAuth2BearerOrSignature
+from web3login.exceptions import Web3VerificationError
+from web3login.middlewares.fastapi import OAuth2BearerOrWeb3
 
 from . import actions, data
 from .db import yield_db_read_only_session
-from .settings import BOT_INSTALLATION_TOKEN, BOT_INSTALLATION_TOKEN_HEADER
+from .settings import (
+    APPLICATION_NAME,
+    BOT_INSTALLATION_TOKEN,
+    BOT_INSTALLATION_TOKEN_HEADER,
+)
 
 logger = logging.getLogger(__name__)
 
-
 # Login implementation follows:
 # https://fastapi.tiangolo.com/tutorial/security/simple-oauth2/
-oauth2_scheme = OAuth2BearerOrSignature(tokenUrl="token")
-oauth2_scheme_manual = OAuth2BearerOrSignature(tokenUrl="token", auto_error=False)
+oauth2_scheme = OAuth2BearerOrWeb3(tokenUrl="token")
+oauth2_scheme_manual = OAuth2BearerOrWeb3(tokenUrl="token", auto_error=False)
 
 
 async def get_current_user(
@@ -39,13 +42,16 @@ async def get_current_user(
         raise HTTPException(status_code=404, detail="Access token not found")
 
     try:
-        if scheme == "moonstream":
+        if scheme == "web3":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
-            verified = verify(authorization_payload=payload, schema="registration")
+            verified = verify(
+                authorization_payload=payload,
+                application_to_check=APPLICATION_NAME,
+            )
             if not verified:
-                logger.info("Moonstream verification error")
-                raise MoonstreamVerificationError()
+                logger.info("Web3 verification error")
+                raise Web3VerificationError()
             web3_address = payload.get("address")
             if web3_address is None:
                 logger.error("Web3 address in payload could not be None")
@@ -76,7 +82,7 @@ async def get_current_user(
     except actions.UserInvalidParameters as e:
         logger.info(e)
         raise HTTPException(status_code=500)
-    except MoonstreamVerificationError:
+    except Web3VerificationError:
         raise HTTPException(status_code=403, detail="Signature not verified")
     except Exception:
         logger.error("Unhandled exception at get_current_user")
@@ -112,13 +118,16 @@ async def get_current_user_with_groups(
         raise HTTPException(status_code=404, detail="Access token not found")
 
     try:
-        if scheme == "moonstream":
+        if scheme == "web3":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
-            verified = verify(authorization_payload=payload, schema="registration")
+            verified = verify(
+                authorization_payload=payload,
+                application_to_check=APPLICATION_NAME,
+            )
             if not verified:
-                logger.info("Moonstream authorization verification error")
-                raise MoonstreamVerificationError()
+                logger.info("Web3 authorization verification error")
+                raise Web3VerificationError()
             web3_address = payload.get("address")
             if web3_address is None:
                 logger.error("Web3 address in payload could not be None")
@@ -154,7 +163,7 @@ async def get_current_user_with_groups(
     except actions.UserInvalidParameters as e:
         logger.info(e)
         raise HTTPException(status_code=500)
-    except MoonstreamVerificationError:
+    except Web3VerificationError:
         raise HTTPException(status_code=403, detail="Signature not verified")
     except Exception:
         logger.error("Unhandled exception at get_current_user_with_groups")

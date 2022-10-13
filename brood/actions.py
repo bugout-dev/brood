@@ -20,7 +20,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.session import Session
 from web3login.auth import to_checksum_address, verify
-from web3login.exceptions import MoonstreamVerificationError
+from web3login.exceptions import Web3VerificationError
 
 from . import data, exceptions, subscriptions
 from .models import (
@@ -40,6 +40,7 @@ from .models import (
     VerificationEmail,
 )
 from .settings import (
+    APPLICATION_NAME,
     BUGOUT_FROM_EMAIL,
     BUGOUT_URL,
     DEFAULT_USER_GROUP_LIMIT,
@@ -461,10 +462,12 @@ def create_user(
     if signature is not None:
         payload_json = base64.decodebytes(signature.encode()).decode("utf-8")
         payload = json.loads(payload_json)
-        verified = verify(authorization_payload=payload, schema="registration")
+        verified = verify(
+            authorization_payload=payload, application_to_check=APPLICATION_NAME
+        )
         if not verified:
-            logger.info("Moonstream registration verification error")
-            raise MoonstreamVerificationError()
+            logger.info("Web3 registration verification error")
+            raise Web3VerificationError()
         web3_address = payload.get("address")
         if web3_address is None:
             logger.error(
