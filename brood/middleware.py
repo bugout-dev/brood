@@ -1,22 +1,26 @@
 import base64
 import json
 import logging
-from typing import Optional
+from typing import cast, Optional
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.exceptions import HTTPException
 from fastapi.security.utils import get_authorization_scheme_param
 from web3login.auth import to_checksum_address, verify
-from web3login.exceptions import Web3VerificationError
+from web3login.exceptions import (
+    Web3AuthorizationExpired,
+    Web3AuthorizationWrongApplication,
+    Web3VerificationError,
+)
 from web3login.middlewares.fastapi import OAuth2BearerOrWeb3
 
 from . import actions, data
 from .db import yield_db_read_only_session
 from .settings import (
-    APPLICATION_NAME,
     BOT_INSTALLATION_TOKEN,
     BOT_INSTALLATION_TOKEN_HEADER,
+    BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,13 +45,27 @@ async def get_current_user(
     if token is None or token == "":
         raise HTTPException(status_code=404, detail="Access token not found")
 
+    signature_application: str = request.headers.get(
+        BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER
+    )
+    application_id = None
+    if signature_application is not None:
+        try:
+            application_id = cast(UUID, signature_application)
+        except Exception:
+            raise HTTPException(
+                status_code=403, detail="Wrong Web3 signature application provided"
+            )
+
     try:
         if scheme == "web3":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
             verified = verify(
                 authorization_payload=payload,
-                application_to_check=APPLICATION_NAME,
+                application_to_check=str(application_id)
+                if application_id is not None
+                else "",
             )
             if not verified:
                 logger.info("Web3 verification error")
@@ -57,7 +75,11 @@ async def get_current_user(
                 logger.error("Web3 address in payload could not be None")
                 raise Exception()
             web3_address = to_checksum_address(web3_address)
-            user = actions.get_user(session=db_session, web3_address=web3_address)
+            user = actions.get_user(
+                session=db_session,
+                web3_address=web3_address,
+                application_id=application_id,
+            )
 
         elif scheme == "bearer":
             is_token_active, user = actions.get_current_user_by_token(
@@ -82,6 +104,10 @@ async def get_current_user(
     except actions.UserInvalidParameters as e:
         logger.info(e)
         raise HTTPException(status_code=500)
+    except Web3AuthorizationExpired:
+        raise HTTPException(status_code=403, detail="Signature not verified")
+    except Web3AuthorizationWrongApplication:
+        raise HTTPException(status_code=403, detail="Signature not verified")
     except Web3VerificationError:
         raise HTTPException(status_code=403, detail="Signature not verified")
     except Exception:
@@ -117,13 +143,27 @@ async def get_current_user_with_groups(
     if token is None or token == "":
         raise HTTPException(status_code=404, detail="Access token not found")
 
+    signature_application: str = request.headers.get(
+        BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER
+    )
+    application_id = None
+    if signature_application is not None:
+        try:
+            application_id = cast(UUID, signature_application)
+        except Exception:
+            raise HTTPException(
+                status_code=403, detail="Wrong Web3 signature application provided"
+            )
+
     try:
         if scheme == "web3":
             payload_json = base64.decodebytes(str(token).encode()).decode("utf-8")
             payload = json.loads(payload_json)
             verified = verify(
                 authorization_payload=payload,
-                application_to_check=APPLICATION_NAME,
+                application_to_check=str(application_id)
+                if application_id is not None
+                else "",
             )
             if not verified:
                 logger.info("Web3 authorization verification error")
@@ -134,7 +174,9 @@ async def get_current_user_with_groups(
                 raise Exception()
             web3_address = to_checksum_address(web3_address)
             user_extended = actions.get_user_with_groups(
-                session=db_session, web3_address=web3_address
+                session=db_session,
+                web3_address=web3_address,
+                application_id=application_id,
             )
 
         elif scheme == "bearer":
@@ -163,6 +205,10 @@ async def get_current_user_with_groups(
     except actions.UserInvalidParameters as e:
         logger.info(e)
         raise HTTPException(status_code=500)
+    except Web3AuthorizationExpired:
+        raise HTTPException(status_code=403, detail="Signature not verified")
+    except Web3AuthorizationWrongApplication:
+        raise HTTPException(status_code=403, detail="Signature not verified")
     except Web3VerificationError:
         raise HTTPException(status_code=403, detail="Signature not verified")
     except Exception:

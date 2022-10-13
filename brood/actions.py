@@ -40,7 +40,6 @@ from .models import (
     VerificationEmail,
 )
 from .settings import (
-    APPLICATION_NAME,
     BUGOUT_FROM_EMAIL,
     BUGOUT_URL,
     DEFAULT_USER_GROUP_LIMIT,
@@ -463,7 +462,10 @@ def create_user(
         payload_json = base64.decodebytes(signature.encode()).decode("utf-8")
         payload = json.loads(payload_json)
         verified = verify(
-            authorization_payload=payload, application_to_check=APPLICATION_NAME
+            authorization_payload=payload,
+            application_to_check=str(application_id)
+            if application_id is not None
+            else "",
         )
         if not verified:
             logger.info("Web3 registration verification error")

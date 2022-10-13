@@ -21,7 +21,11 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.security.utils import get_authorization_scheme_param
-from web3login.exceptions import Web3VerificationError
+from web3login.exceptions import (
+    Web3AuthorizationExpired,
+    Web3AuthorizationWrongApplication,
+    Web3VerificationError,
+)
 
 from . import actions, data, exceptions, models, subscriptions
 from .db import yield_db_session_from_env
@@ -160,8 +164,12 @@ async def create_user_handler(
             status_code=422,
             detail=invalid_password_error.generic_error_message,
         )
+    except Web3AuthorizationExpired:
+        raise HTTPException(status_code=403, detail="Signature not verified")
+    except Web3AuthorizationWrongApplication:
+        raise HTTPException(status_code=403, detail="Signature not verified")
     except Web3VerificationError:
-        raise HTTPException(status_code=400, detail="Invalid user signature")
+        raise HTTPException(status_code=403, detail="Signature not verified")
     except Exception:
         raise HTTPException(status_code=500)
 

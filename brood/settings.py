@@ -3,8 +3,6 @@ from typing import Optional
 
 import stripe  # type: ignore
 
-APPLICATION_NAME = "brood"
-
 RAW_ORIGIN = os.environ.get("BROOD_CORS_ALLOWED_ORIGINS")
 if RAW_ORIGIN is None:
     raise ValueError(
@@ -98,3 +96,16 @@ BROOD_OPENAPI_LIST = []
 BROOD_OPENAPI_LIST_RAW = os.environ.get("BROOD_OPENAPI_LIST")
 if BROOD_OPENAPI_LIST_RAW is not None:
     BROOD_OPENAPI_LIST = BROOD_OPENAPI_LIST_RAW.split(",")
+
+# Web3 signature
+BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER_RAW = os.environ.get(
+    "BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER"
+)
+if BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER_RAW is not None:
+    BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER = (
+        BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER_RAW
+    )
+else:
+    raise ValueError(
+        "BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER environment variable must be set"
+    )
