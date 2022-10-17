@@ -1,7 +1,7 @@
 import base64
 import json
 import logging
-from typing import cast, Optional
+from typing import Optional, cast
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
@@ -20,7 +20,7 @@ from .db import yield_db_read_only_session
 from .settings import (
     BOT_INSTALLATION_TOKEN,
     BOT_INSTALLATION_TOKEN_HEADER,
-    BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER,
+    BUGOUT_APPLICATION_ID_HEADER,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,9 +45,7 @@ async def get_current_user(
     if token is None or token == "":
         raise HTTPException(status_code=404, detail="Access token not found")
 
-    signature_application: str = request.headers.get(
-        BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER
-    )
+    signature_application: str = request.headers.get(BUGOUT_APPLICATION_ID_HEADER)
     application_id = None
     if signature_application is not None:
         try:
@@ -143,9 +141,7 @@ async def get_current_user_with_groups(
     if token is None or token == "":
         raise HTTPException(status_code=404, detail="Access token not found")
 
-    signature_application: str = request.headers.get(
-        BUGOUT_WEB3_SIGNATURE_APPLICATION_HEADER
-    )
+    signature_application: str = request.headers.get(BUGOUT_APPLICATION_ID_HEADER)
     application_id = None
     if signature_application is not None:
         try:
