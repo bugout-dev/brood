@@ -7,6 +7,8 @@ import json
 from typing import List
 import uuid
 
+from web3login.auth import to_checksum_address
+
 from . import actions
 from . import data
 from . import exceptions
@@ -75,6 +77,32 @@ def users_create_handler(args: argparse.Namespace) -> None:
         )
 
         print_user(user)
+    finally:
+        session.close()
+
+
+def users_update_handler(args: argparse.Namespace) -> None:
+    """
+    Handler for "user update" subcommand.
+    """
+    if args.web3_address is None:
+        raise Exception("No arguments specified to update")
+
+    session = SessionLocal()
+    try:
+        query = session.query(User).filter(User.id == args.id)
+        user = query.one_or_none()
+        if user is None:
+            raise Exception("User not found")
+
+        if args.web3_address is not None:
+            web3_address = to_checksum_address(args.web3_address)
+            query.update({User.web3_address: web3_address})
+
+        session.commit()
+        print_user(user)
+    except Exception as e:
+        print(e)
     finally:
         session.close()
 
@@ -722,6 +750,22 @@ def main() -> None:
         help="Set this flag to create a verified user",
     )
     parser_users_create.set_defaults(func=users_create_handler)
+
+    parser_users_update = subcommands_users.add_parser(
+        "update", description="Update Brood user"
+    )
+    parser_users_update.add_argument(
+        "-i",
+        "--id",
+        required=True,
+        help="ID of the user to update",
+    )
+    parser_users_update.add_argument(
+        "-w",
+        "--web3_address",
+        help="Set new web3 address",
+    )
+    parser_users_update.set_defaults(func=users_update_handler)
 
     parser_users_get = subcommands_users.add_parser("get", description="Get Brood user")
     parser_users_get.add_argument(

@@ -218,6 +218,7 @@ def user_as_json_dict(user: User) -> Dict[str, Any]:
         "username": user.username,
         "email": user.email,
         "normalized_email": user.normalized_email,
+        "web3_address": user.web3_address,
         "verified": user.verified,
         "created_at": str(user.created_at),
         "updated_at": str(user.updated_at),
