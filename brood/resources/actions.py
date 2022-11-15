@@ -64,7 +64,7 @@ def acl_auth(
 def acl_check(
     acl: Dict[data.HolderType, List[str]],
     required_scopes: Set[data.ResourcePermissions],
-    check_type: data.HolderType = None,
+    check_type: Optional[data.HolderType] = None,
 ) -> None:
     """
     Checks if provided permissions from handler intersect with existing permissions for user/group.

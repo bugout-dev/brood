@@ -275,7 +275,7 @@ async def delete_token_handler(
 
     - **target_token** (uuid, null): Token ID to revoke
     """
-    authorization: str = request.headers.get("Authorization")
+    authorization: str = request.headers.get("Authorization")  # type: ignore
     scheme_raw, _ = get_authorization_scheme_param(authorization)
     scheme = scheme_raw.lower()
     if scheme != "bearer":

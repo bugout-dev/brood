@@ -57,5 +57,5 @@ echo
 echo -e "${PREFIX_INFO} Replacing existing Brood service definition with ${BROOD_SERVICE_FILE}"
 chmod 644 "${SCRIPT_DIR}/${BROOD_SOURCE_SERVICE_FILE}"
 cp "${SCRIPT_DIR}/${BROOD_SOURCE_SERVICE_FILE}" "/home/ubuntu/.config/systemd/user/${BROOD_SERVICE_FILE}"
-XDG_RUNTIME_DIR="/run/user/$UID" systemctl --user daemon-reload
-XDG_RUNTIME_DIR="/run/user/$UID" systemctl --user restart "${BROOD_SERVICE_FILE}"
+XDG_RUNTIME_DIR="/run/user/1000" systemctl --user daemon-reload
+XDG_RUNTIME_DIR="/run/user/1000" systemctl --user restart "${BROOD_SERVICE_FILE}"

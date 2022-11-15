@@ -2,25 +2,26 @@
 Brood CLI
 """
 import argparse
-from distutils.util import strtobool
+import base64
 import json
-from typing import List
 import uuid
+from distutils.util import strtobool
+from typing import List
 
-from . import actions
-from . import data
-from . import exceptions
-from . import subscriptions
+from web3login.auth import to_checksum_address, verify
+from web3login.exceptions import Web3VerificationError
+
+from . import actions, data, exceptions, subscriptions
 from .db import SessionLocal
 from .models import (
-    User,
+    Application,
     Group,
+    KVBrood,
     Role,
-    TokenType,
     Subscription,
     SubscriptionPlan,
-    KVBrood,
-    Application,
+    TokenType,
+    User,
 )
 
 
@@ -75,6 +76,49 @@ def users_create_handler(args: argparse.Namespace) -> None:
         )
 
         print_user(user)
+    finally:
+        session.close()
+
+
+def users_update_handler(args: argparse.Namespace) -> None:
+    """
+    Handler for "user update" subcommand.
+    """
+    if args.web3_signature is None:
+        raise Exception("No arguments specified to update")
+
+    session = SessionLocal()
+    try:
+        query = session.query(User).filter(User.id == args.id)
+        user = query.one_or_none()
+        if user is None:
+            raise Exception("User not found")
+
+        if args.web3_signature is not None:
+            payload_json = base64.decodebytes(args.web3_signature.encode()).decode(
+                "utf-8"
+            )
+            payload = json.loads(payload_json)
+            verified = verify(
+                authorization_payload=payload,
+                application_to_check=str(user.application_id)
+                if user.application_id is not None
+                else "",
+            )
+            if not verified:
+                raise Web3VerificationError("Web3 registration verification error")
+            web3_address = payload.get("address")
+            if web3_address is None:
+                raise Exception(
+                    f"Web3 address in payload could not be None for user with username: {user.username}"
+                )
+            web3_address = to_checksum_address(web3_address)
+            query.update({User.web3_address: web3_address})
+
+        session.commit()
+        print_user(user)
+    except Exception as e:
+        print(e)
     finally:
         session.close()
 
@@ -722,6 +766,22 @@ def main() -> None:
         help="Set this flag to create a verified user",
     )
     parser_users_create.set_defaults(func=users_create_handler)
+
+    parser_users_update = subcommands_users.add_parser(
+        "update", description="Update Brood user"
+    )
+    parser_users_update.add_argument(
+        "-i",
+        "--id",
+        required=True,
+        help="ID of the user to update",
+    )
+    parser_users_update.add_argument(
+        "-w",
+        "--web3_signature",
+        help="Set new web3 address with provided signature",
+    )
+    parser_users_update.set_defaults(func=users_update_handler)
 
     parser_users_get = subcommands_users.add_parser("get", description="Get Brood user")
     parser_users_get.add_argument(
