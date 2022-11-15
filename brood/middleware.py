@@ -39,7 +39,7 @@ async def get_current_user(
     """
     Middleware returns user if its token or web3 signature verified.
     """
-    authorization: str = request.headers.get("Authorization")
+    authorization: str = request.headers.get("Authorization")  # type: ignore
     scheme_raw, _ = get_authorization_scheme_param(authorization)
     scheme = scheme_raw.lower()
     if token is None or token == "":
@@ -135,7 +135,7 @@ async def get_current_user_with_groups(
     """
     Middleware returns user with groups it belongs if its token or web3 signature verified.
     """
-    authorization: str = request.headers.get("Authorization")
+    authorization: str = request.headers.get("Authorization")  # type: ignore
     scheme_raw, _ = get_authorization_scheme_param(authorization)
     scheme = scheme_raw.lower()
     if token is None or token == "":
@@ -253,7 +253,7 @@ async def is_token_restricted_or_installation(
     Because of oauth2_scheme_manual we could accept None
     for follow up Bugout header check.
     """
-    authorization: str = request.headers.get("Authorization")
+    authorization: str = request.headers.get("Authorization")  # type: ignore
     scheme_raw, _ = get_authorization_scheme_param(authorization)
     scheme = scheme_raw.lower()
 
@@ -276,7 +276,7 @@ async def is_token_restricted(
     """
     Check if user's token is restricted or not.
     """
-    authorization: str = request.headers.get("Authorization")
+    authorization: str = request.headers.get("Authorization")  # type: ignore
     scheme_raw, _ = get_authorization_scheme_param(authorization)
     scheme = scheme_raw.lower()
 
