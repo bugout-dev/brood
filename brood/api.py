@@ -240,8 +240,7 @@ async def create_token_restricted_handler(
     - **token_type** (string): Token type
     - **token_note** (string): Short token description
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -375,8 +374,7 @@ async def get_tokens_handler(
     - **token_type** (): Token type
     - **restricted** (): Restricted token or default
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -405,7 +403,7 @@ async def get_user_handler(
     """
     Get current user.
     """
-    current_user = user_authorization[1]
+    _, current_user = user_authorization
     try:
         user = actions.get_user(
             session=db_session,
@@ -438,7 +436,7 @@ async def find_user_handler(
     - **user_id** (uuid, null): User ID
     - **application_id** (uuid, null): Application ID
     """
-    is_token_restricted = user_authorization[0]
+    is_token_restricted, _ = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -482,8 +480,7 @@ async def get_user_by_id_handler(
 
     - **user_id** (uuid, null): User ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -513,7 +510,7 @@ async def get_auth_handler(
     """
     Endpoint returns user info extended with groups, mostly used as authorization middleware.
     """
-    current_user_with_groups = user_authorization_with_groups[1]
+    _, current_user_with_groups = user_authorization_with_groups
     return current_user_with_groups
 
 
@@ -528,8 +525,7 @@ async def verification_handler(
 
     - **verification_code** (string): Verification code to complete user registration
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -636,8 +632,7 @@ async def change_password_handler(
     - **new_password** (string): New user password
     - **current_password** (string): Current user password
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -677,8 +672,7 @@ async def update_user_handler(
     - **first_name** (string): First user name
     - **last_name** (string):  Last user name
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -710,8 +704,7 @@ async def delete_user_handler(
     - **user_id** (uuid): User ID
     - **password** (string): User password
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -779,8 +772,7 @@ async def get_group_handler(
 
     - **group_id** (uuid): Group ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -843,8 +835,7 @@ async def get_group_children_handler(
     - **limit** (integer): Output result limit
     - **offset** (integer): Result output offset
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -890,8 +881,7 @@ async def get_groups_handler(
     """
     Get list of groups user belongs to.
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -926,8 +916,7 @@ async def create_group_handler(
     - **group_name** (string): Group name
     - **parent** (uuid): Group parent if exists
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -996,8 +985,7 @@ async def set_user_in_group_handler(
     - **username** (string): User name
     - **email** (string): User email
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1065,8 +1053,7 @@ async def get_group_members_handler(
 
     - **group_id** (uuid): Group ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1106,8 +1093,7 @@ async def get_group_subscriptions_handler(
     - **group_id** (uuid): Group ID
     - **active** (boolean, null): Active subscription or not
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1158,8 +1144,7 @@ async def set_group_name_handler(
     - **group_id** (uuid): Group ID
     - **group_name** (string): Group name
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1217,8 +1202,7 @@ async def delete_user_from_group_handler(
     - **username** (string): User username
     - **email** (string): User email
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1289,8 +1273,7 @@ async def delete_group_handler(
 
     - **group_id** (uuid): Group ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1358,8 +1341,7 @@ async def get_invites_handler(
     - **group_id** (uuid): Group ID
     - **active** (boolean, null): Active invite or not
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1416,8 +1398,7 @@ async def invite_send_handler(
     - **email** (string, null): User email
     - **user_type** (string): User permission in group
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1494,8 +1475,7 @@ async def invite_accept_handler(
 
     - **invite_id** (uuid): Invite ID to group
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1574,8 +1554,7 @@ async def invite_revoke_handler(
     - **group_id** (uuid): Group ID
     - **invite_id** (uuid): Invite ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1774,8 +1753,7 @@ async def add_subscription_handler(
     """
     Handle subscription requests from Frontend.
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1846,8 +1824,7 @@ async def delete_subscription_handler(
     """
     Deletes all group subscriptions with proper subscription plan type.
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1917,8 +1894,7 @@ async def create_application_handler(
     - **name** (string): Application name
     - **description** (string): Application short description
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -1968,8 +1944,7 @@ async def get_application_handler(
 
     - **application_id** (uuid): Application ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -2017,8 +1992,7 @@ async def list_applications_handler(
 
     - **group_id** (uuid, null): Group ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -2077,8 +2051,7 @@ async def delete_application_handler(
 
     - **application_id** (uuid): Application ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,

@@ -103,8 +103,7 @@ async def create_resource_handler(
         - **application_id** (uuid)
         - **resource_data** (dict)
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -138,8 +137,7 @@ async def get_resources_list_handler(
 
     - **<query>** (string): Any query param to filter resources output by resource_data key
     """
-    is_token_restricted = user_authorization_with_groups[0]
-    current_user_with_groups = user_authorization_with_groups[1]
+    is_token_restricted, current_user_with_groups = user_authorization_with_groups
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -192,8 +190,7 @@ async def get_resource_handler(
 
     - **resource_id** (uuid): Resource ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -239,8 +236,7 @@ async def update_resource_handler(
     - **update** (dict): Key-value pair to update
     - **drop_keys** (list): List of keys to drop
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -287,8 +283,7 @@ async def delete_resource_handler(
 
     - **resource_id** (uuid): Resource ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -339,8 +334,7 @@ async def add_resource_holder_permissions_handler(
     - **holder_type** (string): Type of holder (user or group)
     - **permissions** (list): List of permissions to add (admin, create, read, update, delete)
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -395,8 +389,7 @@ async def get_resource_holders_permissions_handler(
     - **resource_id** (uuid): Resource ID
     - **holder_id** (uuid, null): User or group ID
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -446,8 +439,7 @@ async def delete_resource_holder_permissions_handler(
     - **holder_type** (string): Type of holder (user or group)
     - **permissions** (list): List of permissions to add (admin, create, read, update, delete)
     """
-    is_token_restricted = user_authorization[0]
-    current_user = user_authorization[1]
+    is_token_restricted, current_user = user_authorization
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
