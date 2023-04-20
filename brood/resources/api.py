@@ -1,29 +1,21 @@
 import logging
-from typing import Any, Dict, List, Set
+from typing import Set, Tuple
 from uuid import UUID
 
-from fastapi import (
-    Body,
-    FastAPI,
-    Form,
-    Path,
-    Depends,
-    Request,
-    Query,
-    HTTPException,
-)
+from fastapi import Body, Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm.session import Session
 
-from . import actions
-from . import data
-from . import exceptions
-from .version import BROOD_RESOURCES_VERSION
-from ..data import VersionResponse
 from .. import models as brood_models
-from ..db import yield_db_session_from_env, yield_db_read_only_session
-from ..middleware import get_current_user, get_current_user_with_groups
-from ..settings import ORIGINS, DOCS_TARGET_PATH, BROOD_OPENAPI_LIST
+from ..data import UserWithGroupsResponse, VersionResponse
+from ..db import yield_db_read_only_session, yield_db_session_from_env
+from ..middleware import (
+    request_user_authorization,
+    request_user_authorization_with_groups,
+)
+from ..settings import BROOD_OPENAPI_LIST, DOCS_TARGET_PATH, ORIGINS
+from . import actions, data, exceptions
+from .version import BROOD_RESOURCES_VERSION
 
 SUBMODULE_NAME = "resources"
 
@@ -98,7 +90,9 @@ async def version() -> VersionResponse:
 @app.post("/", tags=["resources"], response_model=data.ResourceResponse)
 async def create_resource_handler(
     data: data.ResourceCreationRequest = Body(...),
-    current_user: brood_models.User = Depends(get_current_user),
+    user_authorization: Tuple[bool, brood_models.User] = Depends(
+        request_user_authorization
+    ),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceResponse:
     """
@@ -109,6 +103,14 @@ async def create_resource_handler(
         - **application_id** (uuid)
         - **resource_data** (dict)
     """
+    is_token_restricted = user_authorization[0]
+    current_user = user_authorization[1]
+    if is_token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to create resource.",
+        )
+
     try:
         resource = actions.create_resource(
             db_session=db_session,
@@ -126,7 +128,9 @@ async def create_resource_handler(
 @app.get("/", tags=["resources"], response_model=data.ResourcesListResponse)
 async def get_resources_list_handler(
     request: Request,
-    current_user: brood_models.User = Depends(get_current_user_with_groups),
+    user_authorization_with_groups: Tuple[bool, UserWithGroupsResponse] = Depends(
+        request_user_authorization_with_groups
+    ),
     db_session=Depends(yield_db_read_only_session),
 ) -> data.ResourcesListResponse:
     """
@@ -134,6 +138,14 @@ async def get_resources_list_handler(
 
     - **<query>** (string): Any query param to filter resources output by resource_data key
     """
+    is_token_restricted = user_authorization_with_groups[0]
+    current_user_with_groups = user_authorization_with_groups[1]
+    if is_token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to list resources.",
+        )
+
     params = {param: request.query_params[param] for param in request.query_params}
     application_id = None
     if "application_id" in params.keys():
@@ -141,9 +153,13 @@ async def get_resources_list_handler(
         del params["application_id"]
 
     try:
-        user_groups_ids = [group.group_id for group in current_user.groups]
+        user_groups_ids = [group.group_id for group in current_user_with_groups.groups]
         resources = actions.get_list_of_resources(
-            db_session, current_user.id, user_groups_ids, params, application_id
+            db_session,
+            current_user_with_groups.id,
+            user_groups_ids,
+            params,
+            application_id,
         )
     except Exception as err:
         logger.error(f"Unhandled error in get_resources_list_handler: {str(err)}")
@@ -166,7 +182,9 @@ async def get_resources_list_handler(
 @app.get("/{resource_id}", tags=["resources"], response_model=data.ResourceResponse)
 async def get_resource_handler(
     resource_id: UUID = Path(...),
-    current_user: brood_models.User = Depends(get_current_user),
+    user_authorization: Tuple[bool, brood_models.User] = Depends(
+        request_user_authorization
+    ),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceResponse:
     """
@@ -174,6 +192,14 @@ async def get_resource_handler(
 
     - **resource_id** (uuid): Resource ID
     """
+    is_token_restricted = user_authorization[0]
+    current_user = user_authorization[1]
+    if is_token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to get resource.",
+        )
+
     ensure_resource_permission(
         db_session,
         current_user.id,
@@ -201,7 +227,9 @@ async def get_resource_handler(
 async def update_resource_handler(
     resource_id: UUID = Path(...),
     update_data: data.ResourceDataUpdateRequest = Body(...),
-    current_user: brood_models.User = Depends(get_current_user),
+    user_authorization: Tuple[bool, brood_models.User] = Depends(
+        request_user_authorization
+    ),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceResponse:
     """
@@ -211,6 +239,14 @@ async def update_resource_handler(
     - **update** (dict): Key-value pair to update
     - **drop_keys** (list): List of keys to drop
     """
+    is_token_restricted = user_authorization[0]
+    current_user = user_authorization[1]
+    if is_token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to update resource.",
+        )
+
     ensure_resource_permission(
         db_session,
         current_user.id,
@@ -241,7 +277,9 @@ async def update_resource_handler(
 @app.delete("/{resource_id}", tags=["resources"], response_model=data.ResourceResponse)
 async def delete_resource_handler(
     resource_id: UUID = Path(...),
-    current_user: brood_models.User = Depends(get_current_user),
+    user_authorization: Tuple[bool, brood_models.User] = Depends(
+        request_user_authorization
+    ),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceResponse:
     """
@@ -249,6 +287,14 @@ async def delete_resource_handler(
 
     - **resource_id** (uuid): Resource ID
     """
+    is_token_restricted = user_authorization[0]
+    current_user = user_authorization[1]
+    if is_token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to delete resource.",
+        )
+
     ensure_resource_permission(
         db_session,
         current_user.id,
@@ -280,7 +326,9 @@ async def delete_resource_handler(
 async def add_resource_holder_permissions_handler(
     resource_id: UUID = Path(...),
     permissions_request: data.ResourcePermissionsRequest = Body(...),
-    current_user: brood_models.User = Depends(get_current_user),
+    user_authorization: Tuple[bool, brood_models.User] = Depends(
+        request_user_authorization
+    ),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceHoldersListResponse:
     """
@@ -291,6 +339,14 @@ async def add_resource_holder_permissions_handler(
     - **holder_type** (string): Type of holder (user or group)
     - **permissions** (list): List of permissions to add (admin, create, read, update, delete)
     """
+    is_token_restricted = user_authorization[0]
+    current_user = user_authorization[1]
+    if is_token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to add resource holder permissions.",
+        )
+
     required_permissions = {data.ResourcePermissions.UPDATE}
     if data.ResourcePermissions.ADMIN in permissions_request.permissions:
         required_permissions.add(data.ResourcePermissions.ADMIN)
@@ -328,7 +384,9 @@ async def add_resource_holder_permissions_handler(
 async def get_resource_holders_permissions_handler(
     resource_id: UUID = Path(...),
     holder_id: UUID = Query(None),
-    current_user: brood_models.User = Depends(get_current_user),
+    user_authorization: Tuple[bool, brood_models.User] = Depends(
+        request_user_authorization
+    ),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceHoldersListResponse:
     """
@@ -337,6 +395,14 @@ async def get_resource_holders_permissions_handler(
     - **resource_id** (uuid): Resource ID
     - **holder_id** (uuid, null): User or group ID
     """
+    is_token_restricted = user_authorization[0]
+    current_user = user_authorization[1]
+    if is_token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to get resource holder permissions.",
+        )
+
     ensure_resource_permission(
         db_session,
         current_user.id,
@@ -367,7 +433,9 @@ async def get_resource_holders_permissions_handler(
 async def delete_resource_holder_permissions_handler(
     resource_id: UUID = Path(...),
     permissions_request: data.ResourcePermissionsRequest = Body(...),
-    current_user: brood_models.User = Depends(get_current_user),
+    user_authorization: Tuple[bool, brood_models.User] = Depends(
+        request_user_authorization
+    ),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceHoldersListResponse:
     """
@@ -378,6 +446,14 @@ async def delete_resource_holder_permissions_handler(
     - **holder_type** (string): Type of holder (user or group)
     - **permissions** (list): List of permissions to add (admin, create, read, update, delete)
     """
+    is_token_restricted = user_authorization[0]
+    current_user = user_authorization[1]
+    if is_token_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="Restricted tokens are not authorized to delete resource holder permissions.",
+        )
+
     required_permissions = {data.ResourcePermissions.UPDATE}
     if data.ResourcePermissions.ADMIN in permissions_request.permissions:
         required_permissions.add(data.ResourcePermissions.ADMIN)
