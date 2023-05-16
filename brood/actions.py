@@ -44,6 +44,7 @@ from .settings import (
     BUGOUT_URL,
     DEFAULT_USER_GROUP_LIMIT,
     MOONSTREAM_APPLICATION_ID,
+    MOONSTREAM_INFO_EMAIL,
     SENDGRID_API_KEY,
     TEMPLATE_ID_BUGOUT_WELCOME_EMAIL,
     TEMPLATE_ID_MOONSTREAM_WELCOME_EMAIL,
@@ -858,6 +859,53 @@ def change_password(
     session.add(user)
     session.commit()
     return user
+
+
+def send_contact_form_email(
+    name: str,
+    email: str,
+    website: Optional[str] = None,
+    project_about: Optional[str] = None,
+    paper_link: Optional[str] = None,
+) -> None:
+    """
+    Send email from contact form.
+    """
+    if SENDGRID_API_KEY is None:
+        logger.error(
+            f"Missed SENDGRID_API_KEY, message was not sent to user {name} with email: {email}"
+        )
+        return
+
+    message = Mail(
+        from_email=BUGOUT_FROM_EMAIL,
+        to_emails=MOONSTREAM_INFO_EMAIL,
+        subject=f"Moonstream contact form - {name}",
+        html_content="""<p>Email from <strong>{name}</strong> email {email}</p>
+<p><strong>Website:</strong> {website}</p>
+<p><strong>About project:</strong> {project_about}</p>
+<p><strong>Project link:</strong> {paper_link}</p>""".format(
+            name=name,
+            email=email,
+            website=website,
+            project_about=project_about,
+            paper_link=paper_link,
+        ),
+    )
+
+    logger.info(f"Sending contact form email from user {name} with email: {email}...")
+
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+        logger.info(
+            f"Contact form email successfully submitted to Sendgrid from user {name} with email: {email}"
+        )
+    except Exception:
+        logger.error(
+            f"Error contact form email from user {name} with email: {email}..."
+        )
+        pass
 
 
 def send_welcome_email(user: User, application_id: Optional[uuid.UUID] = None) -> None:

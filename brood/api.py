@@ -50,6 +50,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 tags_metadata = [
+    {"name": "common", "description": "Common endpoints."},
     {"name": "users", "description": "Operations with users."},
     {"name": "tokens", "description": "Operations with user tokens."},
     {"name": "groups", "description": "Operations with groups."},
@@ -2074,3 +2075,44 @@ async def delete_application_handler(
         name=application.name,
         description=application.description,
     )
+
+
+@app.post("/contact", tags=["common"], response_model=int)
+async def contact_form(
+    background_tasks: BackgroundTasks,
+    name: str = Form(...),
+    email: str = Form(...),
+    website: str = Form(None),
+    project_about: str = Form(None),
+    paper_link: str = Form(None),
+) -> int:
+    """
+    Contact form with team.
+
+    # TODO(kompotkot): Implement some rate limit.
+    """
+    if len(name) >= 500:
+        raise HTTPException(status_code=400, detail="Field name too long")
+    if len(website) >= 500:
+        raise HTTPException(status_code=400, detail="Field website too long")
+    if len(project_about) >= 2000:
+        raise HTTPException(status_code=400, detail="Field project_about too long")
+    if len(paper_link) >= 500:
+        raise HTTPException(status_code=400, detail="Field paper_link too long")
+
+    try:
+        normalized_email = actions.normalize_email(email)
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(status_code=400, detail="Incorrect email format")
+
+    background_tasks.add_task(
+        actions.send_contact_form_email,
+        name=name,
+        email=normalized_email,
+        website=website,
+        project_about=project_about,
+        paper_link=paper_link,
+    )
+
+    return 1

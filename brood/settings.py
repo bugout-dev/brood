@@ -14,6 +14,7 @@ BUGOUT_URL = os.environ.get("BUGOUT_WEB_URL", "https://bugout.dev")
 
 # Emails
 BUGOUT_FROM_EMAIL = os.environ.get("BROOD_VERIFICATION_FROM_EMAIL", "info@bugout.dev")
+MOONSTREAM_INFO_EMAIL = os.environ.get("MOONSTREAM_INFO_EMAIL", "info@moonstream.to")
 SENDGRID_API_KEY = os.environ.get("BROOD_SENDGRID_API_KEY")
 
 REQUIRE_EMAIL_VERIFICATION: bool = False
