@@ -1193,6 +1193,38 @@ def revoke_token(
     return target_object
 
 
+def revoke_tokens(
+    session: Session,
+    token: uuid.UUID,
+    target_tokens: List[uuid.UUID] = [],
+) -> List[Token]:
+    """
+    Revoke tokens with the given IDs (if it exists).
+    """
+    auth_token_object = get_token(session, token)
+    if auth_token_object.restricted:
+        raise exceptions.RestrictedTokenUnauthorized(
+            "Restricted tokens are not authorized to revoke tokens"
+        )
+
+    revoke_token_objects = (
+        session.query(Token)
+        .filter(Token.user_id == auth_token_object.user_id)
+        .filter(Token.id.in_(target_tokens))
+    ).all()
+
+    for revoke_token in revoke_token_objects:
+        revoke_token.active = False
+        session.add(revoke_token)
+    session.commit()
+
+    logger.info(
+        f"Revoked {len(revoke_token_objects)} tokens by user {auth_token_object.user_id}"
+    )
+
+    return revoke_token_objects
+
+
 def login(
     session: Session,
     username: str,

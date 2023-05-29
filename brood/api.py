@@ -395,6 +395,38 @@ async def get_tokens_handler(
     }
 
 
+@app.delete("/tokens", tags=["tokens"])
+async def delete_tokens_handler(
+    request: Request,
+    access_token: uuid.UUID = Depends(oauth2_scheme),
+    token: List[uuid.UUID] = Form(...),
+    db_session=Depends(yield_db_session_from_env),
+) -> List[uuid.UUID]:
+    """
+    Revoke list of tokens.
+
+    - **target_tokens** (List[uuid]): Token IDs to revoke
+    """
+    authorization: str = request.headers.get("Authorization")  # type: ignore
+    scheme_raw, _ = get_authorization_scheme_param(authorization)
+    scheme = scheme_raw.lower()
+    if scheme != "bearer":
+        raise HTTPException(status_code=400, detail="Unaccepted scheme")
+    try:
+        tokens = actions.revoke_tokens(
+            session=db_session, token=access_token, target_tokens=token
+        )
+    except actions.TokenNotFound:
+        raise HTTPException(status_code=404, detail="Given token does not exist")
+    except exceptions.RestrictedTokenUnauthorized as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except Exception:
+        logger.error("Unhandled error during bulk token revoke")
+        raise HTTPException(status_code=500)
+
+    return [token.id for token in tokens]
+
+
 @app.get("/user", tags=["users"], response_model=data.UserResponse)
 async def get_user_handler(
     user_authorization: Tuple[bool, models.User] = Depends(request_user_authorization),
