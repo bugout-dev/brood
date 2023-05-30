@@ -14,11 +14,12 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, cast
 from passlib.context import CryptContext
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, aliased
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.session import Session
+from sqlalchemy.sql.functions import GenericFunction
 from web3login.auth import to_checksum_address, verify
 from web3login.exceptions import Web3VerificationError
 
@@ -1113,11 +1114,61 @@ def get_token(session: Session, token: uuid.UUID) -> Token:
     """
     Retrieve the token with the given ID from the database (if it exists).
     """
+
     token_object = session.query(Token).filter(Token.id == token).first()
     if token_object is None:
         raise TokenNotFound(f"Token not found")
     token_object = cast(Token, token_object)
     return token_object
+
+
+def fx_tokens_select_with_touch_parser(raw_result) -> data.TokenResponse:
+    """
+    Function `fx_tokens_select_with_touch` returns raw string, according to migration 
+    d44da2eb423b_token_touched_at_column it should be mapped from table:
+    - id uuid
+    - user_id uuid
+    - active boolean
+    - token_type token_type
+    - note varchar
+    - restricted boolean
+    - created_at timestamptz
+    - touched_at timestamptz
+    - updated_at timestamptz
+    """
+    raw_result_lst = raw_result.strip('()').replace('"', '').split(',')
+    return data.TokenResponse(
+        id=raw_result_lst[0],
+        user_id=raw_result_lst[1],
+        active=raw_result_lst[2],
+        token_type=raw_result_lst[3],
+        note=raw_result_lst[4],
+        restricted=raw_result_lst[5],
+        created_at=raw_result_lst[6],
+        touched_at=raw_result_lst[7],
+        updated_at=raw_result_lst[8],
+
+        access_token=raw_result_lst[0],
+    )
+
+
+def get_token_with_touch(session: Session, token: uuid.UUID) -> data.TokenResponse:
+    raw_result = session.query(func.fx_tokens_select_with_touch(token)).first()
+    
+    raw_result_len = len(raw_result)
+    if raw_result_len == 0:
+        raise TokenNotFound("Token not found")
+    elif raw_result_len > 1:
+        raise Exception(f"Too many tokens were found: {raw_result_len}")
+    
+    session.commit()
+
+    try:
+        token = fx_tokens_select_with_touch_parser(raw_result[0])
+    except Exception:
+        raise Exception("Unable to parse token from function raw result")
+    
+    return token
 
 
 def get_tokens(session: Session, user_id: uuid.UUID) -> List[Token]:

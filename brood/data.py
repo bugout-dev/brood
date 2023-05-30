@@ -64,6 +64,7 @@ class TokenResponse(BaseModel):
     token_type: Optional[TokenType]
     note: Optional[str]
     created_at: datetime
+    touched_at: datetime
     updated_at: datetime
     restricted: bool
 
