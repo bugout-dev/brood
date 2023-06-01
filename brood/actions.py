@@ -1215,7 +1215,6 @@ def revoke_tokens(
 
     for revoke_token in revoke_token_objects:
         revoke_token.active = False
-        session.add(revoke_token)
     session.commit()
 
     logger.info(
