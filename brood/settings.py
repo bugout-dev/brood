@@ -1,14 +1,27 @@
+import logging
 import os
 from typing import Optional
 
 import stripe  # type: ignore
+
+from .rc import rc_client
+
+logger = logging.getLogger(__name__)
 
 RAW_ORIGIN = os.environ.get("BROOD_CORS_ALLOWED_ORIGINS")
 if RAW_ORIGIN is None:
     raise ValueError(
         "BROOD_CORS_ALLOWED_ORIGINS environment variable must be set (comma-separated list of CORS allowed origins"
     )
-ORIGINS = RAW_ORIGIN.split(",")
+ORIGINS = RAW_ORIGIN.strip().split(",")
+try:
+    rc_client.set("cors", ",".join(ORIGINS))
+except Exception as err:
+    logger.error("Unable to write CORS origins to Redis cache")
+finally:
+    rc_client.close()
+
+BUGOUT_RESOURCE_TYPE_APPLICATION_CONFIG = "application-config"
 
 BUGOUT_URL = os.environ.get("BUGOUT_WEB_URL", "https://bugout.dev")
 

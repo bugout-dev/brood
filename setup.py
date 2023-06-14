@@ -18,6 +18,7 @@ setup(
         "psycopg2-binary",
         "pydantic",
         "python-multipart",
+        "redis",
         "sendgrid",
         "sqlalchemy>=1.4.26",
         "stripe>=2.61.0",
@@ -45,7 +46,7 @@ setup(
     entry_points={
         "console_scripts": [
             "brood=brood.cli:main",
-            "resources=brood.resources.cli:main",
+            "brood-resources=brood.resources.cli:main",
         ]
     },
 )

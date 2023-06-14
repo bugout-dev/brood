@@ -23,6 +23,8 @@ from .models import (
     TokenType,
     User,
 )
+from .resources.models import Resource
+from .settings import BUGOUT_RESOURCE_TYPE_APPLICATION_CONFIG
 
 
 def print_user(user: User) -> None:
@@ -728,6 +730,39 @@ def application_migrate_handler(args: argparse.Namespace) -> None:
         session.close()
 
 
+def application_settings_get_handler(args: argparse.Namespace) -> None:
+    session = SessionLocal()
+    try:
+        query = (
+            session.query(Resource)
+            .filter(args.application == Resource.application_id)
+            .filter(
+                Resource.resource_data["type"].astext
+                == BUGOUT_RESOURCE_TYPE_APPLICATION_CONFIG
+            )
+        )
+        resources = query.all()
+
+        print(
+            json.dumps(
+                {
+                    "resources": [
+                        {
+                            "id": str(resource.id),
+                            "application_id": str(resource.application_id),
+                            "resource_data": resource.resource_data,
+                            "created_at": str(resource.created_at),
+                            "updated_at": str(resource.updated_at),
+                        }
+                        for resource in resources
+                    ]
+                }
+            )
+        )
+    finally:
+        session.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Brood CLI")
     parser.set_defaults(func=lambda _: parser.print_help())
@@ -1317,6 +1352,23 @@ def main() -> None:
         "-g", "--group", required=True, help="Group ID migrate to"
     )
     parser_applications_migrate.set_defaults(func=application_migrate_handler)
+
+    parser_application_settings = subcommands_applications.add_parser(
+        "settings", description="Application settings"
+    )
+    parser_application_settings.set_defaults(
+        func=lambda _: parser_application_settings.print_help()
+    )
+    subcommands_application_settings = parser_application_settings.add_subparsers(
+        description="Brood application settings"
+    )
+    parser_application_settings_get = subcommands_application_settings.add_parser(
+        "get", description="Get application settings"
+    )
+    parser_application_settings_get.add_argument(
+        "-a", "--application", required=True, help="Applications ID"
+    )
+    parser_application_settings_get.set_defaults(func=application_settings_get_handler)
 
     args = parser.parse_args()
     args.func(args)

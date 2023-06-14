@@ -6,7 +6,7 @@ from enum import Enum, unique
 from typing import List, Optional
 import uuid
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, HttpUrl
 
 from .models import Role, TokenType
 
@@ -47,6 +47,10 @@ class VersionResponse(BaseModel):
     """
 
     version: str
+
+
+class CORSResponse(BaseModel):
+    cors: str
 
 
 class TokenResponse(BaseModel):

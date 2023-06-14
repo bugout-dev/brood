@@ -66,16 +66,8 @@ def main() -> None:
     parser.set_defaults(func=lambda _: parser.print_help())
     subcommands = parser.add_subparsers(description="Brood resources commands")
 
-    parser_resources = subcommands.add_parser(
-        "resources", description="Brood resources"
-    )
-    parser_resources.set_defaults(func=lambda _: parser_resources.print_help())
-    subcommands_resources = parser_resources.add_subparsers(
-        description="Brood user commands"
-    )
-
     # Resources command parser
-    parser_resources_list = subcommands_resources.add_parser(
+    parser_resources_list = subcommands.add_parser(
         "list", description="List Brood resources"
     )
     parser_resources_list.add_argument(
@@ -84,7 +76,7 @@ def main() -> None:
         help="Application ID filter",
     )
     parser_resources_list.set_defaults(func=resources_list_handler)
-    parser_resources_create = subcommands_resources.add_parser(
+    parser_resources_create = subcommands.add_parser(
         "create", description="Create Brood resources"
     )
     parser_resources_create.add_argument(
