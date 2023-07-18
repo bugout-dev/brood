@@ -625,7 +625,6 @@ async def restore_password_handler(
 async def reset_password_confirmation_handler(
     reset_id: uuid.UUID = Form(...),
     new_password: str = Form(...),
-    application_id: Optional[uuid.UUID] = Form(None),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.UserResponse:
     """
@@ -639,7 +638,6 @@ async def reset_password_confirmation_handler(
             db_session,
             reset_id=reset_id,
             new_password=new_password,
-            application_id=application_id,
         )
     except actions.UserNotFound:
         raise HTTPException(status_code=404, detail="No user for password reset")

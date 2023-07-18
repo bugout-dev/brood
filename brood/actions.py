@@ -1052,7 +1052,6 @@ def reset_password_confirmation(
     session: Session,
     reset_id: uuid.UUID,
     new_password: str,
-    application_id: Optional[uuid.UUID] = None,
 ) -> User:
     """
     Process password change for user. Last step in password reset workflow.
@@ -1070,9 +1069,9 @@ def reset_password_confirmation(
 
     verify_password_strength(new_password)
 
-    user = get_user(
-        session, user_id=reset_object.user_id, application_id=application_id
-    )
+    user = session.query(User).filter(User.id == reset_object.user_id).one_or_none()
+    if user is None:
+        raise UserNotFound(f"Did not find user with ID: {reset_object.user_id}")
 
     try:
         change_password(
