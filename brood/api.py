@@ -681,9 +681,14 @@ async def change_password_handler(
         )
 
     try:
-        user = actions.change_password(
+        user = actions.get_user(
+            session=db_session,
+            user_id=current_user.id,
+            application_id=current_user.application_id,
+        )
+        user_updated = actions.change_password(
             db_session,
-            user=current_user,
+            user=user,
             new_password=new_password,
             current_password=current_password,
         )
@@ -697,7 +702,7 @@ async def change_password_handler(
             detail=invalid_password_error.generic_error_message,
         )
 
-    return user
+    return user_updated
 
 
 @app.put("/user", tags=["users"], response_model=data.UserResponse)
