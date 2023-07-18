@@ -586,6 +586,7 @@ async def verification_handler(
 async def restore_password_handler(
     background_tasks: BackgroundTasks,
     email: str = Form(...),
+    application_id: Optional[uuid.UUID] = Form(None),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResetPasswordResponse:
     """
@@ -595,7 +596,9 @@ async def restore_password_handler(
     """
     reset_status = None
     try:
-        reset_object = actions.generate_reset_password(db_session, email=email)
+        reset_object = actions.generate_reset_password(
+            db_session, email=email, application_id=application_id
+        )
 
         background_tasks.add_task(
             actions.send_reset_password_email,
@@ -631,7 +634,11 @@ async def reset_password_confirmation_handler(
     - **new_password** (string): New user password
     """
     try:
-        user = actions.reset_password_confirmation(db_session, reset_id, new_password)
+        user = actions.reset_password_confirmation(
+            db_session,
+            reset_id=reset_id,
+            new_password=new_password,
+        )
     except actions.UserNotFound:
         raise HTTPException(status_code=404, detail="No user for password reset")
     except actions.UserInvalidParameters:
@@ -672,11 +679,16 @@ async def change_password_handler(
         )
 
     try:
-        user = actions.change_password(
+        user = actions.get_user(
+            session=db_session,
+            user_id=current_user.id,
+            application_id=current_user.application_id,
+        )
+        user_updated = actions.change_password(
             db_session,
+            user=user,
             new_password=new_password,
             current_password=current_password,
-            user_id=current_user.id,
         )
     except actions.UserInvalidParameters:
         raise HTTPException(status_code=400, detail="Invalid user parameters")
@@ -688,7 +700,7 @@ async def change_password_handler(
             detail=invalid_password_error.generic_error_message,
         )
 
-    return user
+    return user_updated
 
 
 @app.put("/user", tags=["users"], response_model=data.UserResponse)

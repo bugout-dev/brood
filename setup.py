@@ -16,7 +16,7 @@ setup(
         "fastapi>=0.70.0",
         "passlib",
         "psycopg2-binary",
-        "pydantic",
+        "pydantic==1.10.2",
         "python-multipart",
         "sendgrid",
         "sqlalchemy>=1.4.26",

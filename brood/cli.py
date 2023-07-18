@@ -153,14 +153,18 @@ def users_newpassword_handler(args: argparse.Namespace) -> None:
     """
     session = SessionLocal()
     try:
-        user = actions.change_password(
+        user = actions.get_user(
             session,
-            new_password=args.new_password,
-            current_password=args.current_password,
             username=args.username,
             email=args.email,
         )
-        print_user(user)
+        user_updated = actions.change_password(
+            session,
+            user=user,
+            new_password=args.new_password,
+            current_password=args.current_password,
+        )
+        print_user(user_updated)
     finally:
         session.close()
 
