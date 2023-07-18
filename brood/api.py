@@ -586,6 +586,7 @@ async def verification_handler(
 async def restore_password_handler(
     background_tasks: BackgroundTasks,
     email: str = Form(...),
+    application_id: Optional[uuid.UUID] = Form(None),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResetPasswordResponse:
     """
@@ -595,7 +596,9 @@ async def restore_password_handler(
     """
     reset_status = None
     try:
-        reset_object = actions.generate_reset_password(db_session, email=email)
+        reset_object = actions.generate_reset_password(
+            db_session, email=email, application_id=application_id
+        )
 
         background_tasks.add_task(
             actions.send_reset_password_email,
@@ -622,6 +625,7 @@ async def restore_password_handler(
 async def reset_password_confirmation_handler(
     reset_id: uuid.UUID = Form(...),
     new_password: str = Form(...),
+    application_id: Optional[uuid.UUID] = Form(None),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.UserResponse:
     """
@@ -631,7 +635,12 @@ async def reset_password_confirmation_handler(
     - **new_password** (string): New user password
     """
     try:
-        user = actions.reset_password_confirmation(db_session, reset_id, new_password)
+        user = actions.reset_password_confirmation(
+            db_session,
+            reset_id=reset_id,
+            new_password=new_password,
+            application_id=application_id,
+        )
     except actions.UserNotFound:
         raise HTTPException(status_code=404, detail="No user for password reset")
     except actions.UserInvalidParameters:
@@ -674,9 +683,9 @@ async def change_password_handler(
     try:
         user = actions.change_password(
             db_session,
+            user=current_user,
             new_password=new_password,
             current_password=current_password,
-            user_id=current_user.id,
         )
     except actions.UserInvalidParameters:
         raise HTTPException(status_code=400, detail="Invalid user parameters")

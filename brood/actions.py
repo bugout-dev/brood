@@ -828,18 +828,14 @@ def delete_user(
 
 def change_password(
     session: Session,
+    user: User,
     new_password: str,
     current_password: Optional[str] = None,
     current_password_hash: Optional[str] = None,
-    username: Optional[str] = None,
-    email: Optional[str] = None,
-    user_id: Optional[uuid.UUID] = None,
 ) -> User:
     """
     Change a user's password.
     """
-    user = get_user(session, username, email, user_id)
-
     password_abide = password_confirm(
         user,
         password=current_password,
@@ -985,7 +981,9 @@ def complete_verification(
     return user
 
 
-def generate_reset_password(session: Session, email: str) -> ResetPassword:
+def generate_reset_password(
+    session: Session, email: str, application_id: Optional[uuid.UUID] = None
+) -> ResetPassword:
     """
     Checks if user exists and password reset requests happens not too often.
 
@@ -999,7 +997,7 @@ def generate_reset_password(session: Session, email: str) -> ResetPassword:
     if email is None:
         raise UserInvalidParameters("In order to get user, email must be specified")
 
-    user = get_user(session, email=email)
+    user = get_user(session, email=email, application_id=application_id)
 
     query = session.query(ResetPassword).filter(ResetPassword.user_id == user.id)
     reset_object = query.one_or_none()
@@ -1051,7 +1049,10 @@ def send_reset_password_email(reset_object: ResetPassword, email: str) -> None:
 
 
 def reset_password_confirmation(
-    session: Session, reset_id: uuid.UUID, new_password: str
+    session: Session,
+    reset_id: uuid.UUID,
+    new_password: str,
+    application_id: Optional[uuid.UUID] = None,
 ) -> User:
     """
     Process password change for user. Last step in password reset workflow.
@@ -1069,13 +1070,16 @@ def reset_password_confirmation(
 
     verify_password_strength(new_password)
 
-    user = get_user(session, user_id=reset_object.user_id)
+    user = get_user(
+        session, user_id=reset_object.user_id, application_id=application_id
+    )
+
     try:
         change_password(
             session,
+            user=user,
             new_password=new_password,
             current_password_hash=user.password_hash,
-            user_id=reset_object.user_id,
         )
 
         query.update({ResetPassword.completed: True})
