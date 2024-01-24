@@ -26,3 +26,9 @@ class ResourceInvalidParameters(ValueError):
     """
     Raised when operations are applied to a resource but invalid parameters are provided.
     """
+
+
+class NotEnoughPermissions(Exception):
+    """
+    Raised when not enough permissions to operate with resources.
+    """

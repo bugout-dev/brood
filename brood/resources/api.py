@@ -90,8 +90,8 @@ async def version() -> VersionResponse:
 @app.post("/", tags=["resources"], response_model=data.ResourceResponse)
 async def create_resource_handler(
     data: data.ResourceCreationRequest = Body(...),
-    user_authorization: Tuple[bool, brood_models.User] = Depends(
-        request_user_authorization
+    user_authorization_with_groups: Tuple[bool, UserWithGroupsResponse] = Depends(
+        request_user_authorization_with_groups
     ),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.ResourceResponse:
@@ -103,7 +103,7 @@ async def create_resource_handler(
         - **application_id** (uuid)
         - **resource_data** (dict)
     """
-    is_token_restricted, current_user = user_authorization
+    is_token_restricted, current_user_with_groups = user_authorization_with_groups
     if is_token_restricted:
         raise HTTPException(
             status_code=403,
@@ -111,12 +111,16 @@ async def create_resource_handler(
         )
 
     try:
+        user_groups_ids = [group.group_id for group in current_user_with_groups.groups]
         resource = actions.create_resource(
             db_session=db_session,
-            user_id=current_user.id,
+            user_id=current_user_with_groups.id,
             application_id=data.application_id,
             resource_data=data.resource_data,
+            user_groups_ids=user_groups_ids,
         )
+    except exceptions.NotEnoughPermissions:
+        raise HTTPException(status_code=403, detail="Forbidden")
     except Exception as err:
         logger.error(f"Unhandled error in create_resource_handler: {str(err)}")
         raise HTTPException(status_code=500)

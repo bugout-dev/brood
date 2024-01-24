@@ -1,15 +1,13 @@
-from collections import defaultdict
 import logging
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set
 from uuid import UUID
 
 from sqlalchemy import or_
 from sqlalchemy.orm.session import Session
 
-from . import data
-from . import exceptions
-from . import models
 from ..models import Application
+from . import data, exceptions, models
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +86,7 @@ def create_resource(
     user_id: UUID,
     application_id: UUID,
     resource_data: Dict[str, Any],
+    user_groups_ids: List[UUID],
 ) -> models.Resource:
     """
     Create new resource and permissions for that resource.
@@ -100,9 +99,14 @@ def create_resource(
     db_session.add(resource)
     db_session.commit()
 
-    application = (
+    application: Application = (
         db_session.query(Application).filter(Application.id == application_id).first()
     )
+
+    if application.group_id not in user_groups_ids:
+        raise exceptions.NotEnoughPermissions(
+            "Not enough permissions to create resource"
+        )
 
     for permission in data.ResourcePermissions:
         resource_permission = models.ResourcePermission(
