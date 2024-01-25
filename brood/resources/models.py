@@ -3,7 +3,7 @@ from enum import Enum, unique
 
 from sqlalchemy import Column, DateTime
 from sqlalchemy import Enum as PgEnum
-from sqlalchemy import ForeignKey, MetaData, String, UniqueConstraint
+from sqlalchemy import ForeignKey, MetaData, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -78,30 +78,6 @@ class Resource(Base):  # type: ignore
     )
 
 
-class ResourcePermission(Base):  # type: ignore
-    """
-    Describe available permissions for provided resource.
-    """
-
-    __tablename__ = "resource_permissions"
-
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        unique=True,
-        nullable=False,
-    )
-    resource_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("resources.id", ondelete="CASCADE"),
-    )
-    permission = Column(String, nullable=False)
-
-    # SQLAlchemy relationships
-    resource = relationship("Resource", back_populates="permissions")
-
-
 class ResourceHolderPermission(Base):  # type: ignore
     __tablename__ = "resource_holder_permissions"
     __table_args__ = (
@@ -123,10 +99,6 @@ class ResourceHolderPermission(Base):  # type: ignore
     resource_id = Column(
         UUID(as_uuid=True),
         ForeignKey("resources.id", ondelete="CASCADE"),
-    )
-    permission_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("resource_permissions.id", ondelete="CASCADE"),
     )
     permission = Column(
         PgEnum(ResourcePermissionsEnum, name="resource_permissions_enum"),
