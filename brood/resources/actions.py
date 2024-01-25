@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import UUID
 
 from sqlalchemy import or_
@@ -13,15 +13,18 @@ logger = logging.getLogger(__name__)
 
 
 def acl_auth(
-    db_session: Session, user_id: str, user_group_id_list: List[str], resource_id: UUID
-) -> Dict[data.HolderType, List[str]]:
+    db_session: Session,
+    user_id: UUID,
+    user_group_id_list: List[UUID],
+    resource_id: UUID,
+) -> Dict[data.HolderType, List[models.ResourcePermissionsEnum]]:
     """
     Checks the authorization in ResourceHolderPermission model. If it represents
     a verified user or group user belongs to and generates dictionary with
     permissions for user and group. Otherwise raises a 403 error.
     """
 
-    acl: Dict[data.HolderType, List[str]] = {
+    acl: Dict[data.HolderType, List[models.ResourcePermissionsEnum]] = {
         data.HolderType.user: [],
         data.HolderType.group: [],
     }
@@ -29,22 +32,19 @@ def acl_auth(
         db_session.query(
             models.ResourceHolderPermission.user_id,
             models.ResourceHolderPermission.group_id,
-            models.ResourcePermission.permission,
-        )
-        .join(
-            models.ResourcePermission,
-            models.ResourcePermission.id
-            == models.ResourceHolderPermission.permission_id,
+            models.ResourceHolderPermission.permission,
         )
         .filter(models.ResourceHolderPermission.resource_id == resource_id)
         .filter(
             or_(
-                models.ResourceHolderPermission.user_id == user_id,
+                models.ResourceHolderPermission.user_id == str(user_id),
                 models.ResourceHolderPermission.group_id.in_(user_group_id_list),
             )
         )
         .all()
     )
+
+    print(1, permissions)
 
     if not permissions:
         raise exceptions.PermissionsNotFound("No permissions for requested information")
@@ -60,7 +60,7 @@ def acl_auth(
 
 
 def acl_check(
-    acl: Dict[data.HolderType, List[str]],
+    acl: Dict[data.HolderType, List[models.ResourcePermissionsEnum]],
     required_scopes: Set[data.ResourcePermissions],
     check_type: Optional[data.HolderType] = None,
 ) -> None:
@@ -69,14 +69,25 @@ def acl_check(
     """
     if check_type is None:
         # [["read", "update"], ["update"]] -> ["read", "update"]
-        permissions = {value for values in acl.values() for value in values}
+        permissions = {
+            permission.value for d_values in acl.values() for permission in d_values
+        }
     elif check_type in data.HolderType:
-        permissions = {value for value in acl[check_type]}
+        permissions = {permission.value for permission in acl[check_type]}
     else:
         logger.warning("Provided wrong HolderType")
         raise exceptions.PermissionsNotFound("No permissions for requested information")
 
     required_scopes_values = {scope.value for scope in required_scopes}
+
+    # If required_scopes is Any - user can access to resource if handle any permission for this resource.
+    if data.ResourcePermissions.any.value in required_scopes_values:
+        if len(permissions) == 0:
+            raise exceptions.PermissionsNotFound(
+                "No permissions for requested information"
+            )
+        return
+
     if not required_scopes_values.issubset(permissions):
         raise exceptions.PermissionsNotFound("No permissions for requested information")
 
@@ -108,29 +119,21 @@ def create_resource(
             "Not enough permissions to create resource"
         )
 
-    for permission in data.ResourcePermissions:
-        resource_permission = models.ResourcePermission(
-            resource_id=resource.id,
-            permission=permission.value,
-        )
-        db_session.add(resource_permission)
-        db_session.commit()
-
-        user_permission = models.ResourceHolderPermission(
-            user_id=user_id,
-            group_id=None,
-            resource_id=resource.id,
-            permission_id=resource_permission.id,
-        )
-        application_group_permission = models.ResourceHolderPermission(
-            user_id=None,
-            group_id=application.group_id,
-            resource_id=resource.id,
-            permission_id=resource_permission.id,
-        )
-        db_session.add(user_permission)
-        db_session.add(application_group_permission)
-        db_session.commit()
+    user_permission = models.ResourceHolderPermission(
+        user_id=user_id,
+        group_id=None,
+        resource_id=resource.id,
+        permission=models.ResourcePermissionsEnum.admin,
+    )
+    application_group_permission = models.ResourceHolderPermission(
+        user_id=None,
+        group_id=application.group_id,
+        resource_id=resource.id,
+        permission=models.ResourcePermissionsEnum.admin,
+    )
+    db_session.add(user_permission)
+    db_session.add(application_group_permission)
+    db_session.commit()
 
     return resource
 
@@ -235,7 +238,7 @@ def add_holder_permissions(
     If permission already exists, this permissions will be passed.
     """
     holder_permissions_query = db_session.query(
-        models.ResourceHolderPermission.permission_id
+        models.ResourceHolderPermission.permission
     ).filter(
         models.ResourceHolderPermission.resource_id == resource_id,
     )
@@ -250,20 +253,11 @@ def add_holder_permissions(
     else:
         raise Exception(f"Unexpected holder_type: {permissions_request.holder_type}")
 
-    permissions_to_add_query = (
-        db_session.query(models.ResourcePermission)
-        .join(
-            models.ResourceHolderPermission,
-            models.ResourceHolderPermission.permission_id
-            == models.ResourcePermission.id,
-        )
-        .filter(
-            models.ResourceHolderPermission.resource_id == resource_id,
-            models.ResourcePermission.permission.in_(
-                [permission.value for permission in permissions_request.permissions]
-            ),
-            models.ResourcePermission.id.notin_(holder_permissions_query),
-        )
+    permissions_to_add_query = db_session.query(models.ResourceHolderPermission).filter(
+        models.ResourceHolderPermission.permission.in_(
+            [permission.value for permission in permissions_request.permissions]
+        ),
+        models.ResourceHolderPermission.permission.notin_(holder_permissions_query),
     )
 
     new_permission = [
@@ -275,13 +269,15 @@ def add_holder_permissions(
             if permissions_request.holder_type == data.HolderType.group
             else None,
             resource_id=resource_id,
-            permission_id=permission.id,
+            permission=permission,
         )
         for permission in permissions_to_add_query.all()
     ]
 
     db_session.add_all(new_permission)
-    db_session.commit()
+
+    #TODO(kompotkot): WIP
+    # db_session.commit()
 
 
 def get_resource_holders_permissions(
@@ -290,19 +286,11 @@ def get_resource_holders_permissions(
     """
     Get list of permissions for exact holder.
     """
-    query = (
-        db_session.query(
-            models.ResourceHolderPermission.user_id,
-            models.ResourceHolderPermission.group_id,
-            models.ResourcePermission.permission,
-        )
-        .join(
-            models.ResourcePermission,
-            models.ResourcePermission.id
-            == models.ResourceHolderPermission.permission_id,
-        )
-        .filter(models.ResourceHolderPermission.resource_id == resource_id)
-    )
+    query = db_session.query(
+        models.ResourceHolderPermission.user_id,
+        models.ResourceHolderPermission.group_id,
+        models.ResourceHolderPermission.permission,
+    ).filter(models.ResourceHolderPermission.resource_id == resource_id)
     if holder_id is not None:
         query = query.filter(
             or_(
@@ -373,11 +361,8 @@ def delete_resource_holder_permissions(
     else:
         raise Exception(f"Unexpected holder_type: {permissions_request.holder_type}")
 
-    permissions_to_delete_query = holder_permissions_query.join(
-        models.ResourcePermission,
-        models.ResourcePermission.id == models.ResourceHolderPermission.permission_id,
-    ).filter(
-        models.ResourcePermission.permission.in_(
+    permissions_to_delete_query = holder_permissions_query.filter(
+        models.ResourceHolderPermission.permission.in_(
             [permission.value for permission in permissions_request.permissions]
         ),
     )

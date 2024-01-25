@@ -98,9 +98,6 @@ class ResourcePermission(Base):  # type: ignore
     )
     permission = Column(String, nullable=False)
 
-    # SQLAlchemy relationships
-    resource = relationship("Resource", back_populates="permissions")
-
 
 class ResourceHolderPermission(Base):  # type: ignore
     __tablename__ = "resource_holder_permissions"
@@ -123,10 +120,6 @@ class ResourceHolderPermission(Base):  # type: ignore
     resource_id = Column(
         UUID(as_uuid=True),
         ForeignKey("resources.id", ondelete="CASCADE"),
-    )
-    permission_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("resource_permissions.id", ondelete="CASCADE"),
     )
     permission = Column(
         PgEnum(ResourcePermissionsEnum, name="resource_permissions_enum"),
