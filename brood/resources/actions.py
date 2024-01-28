@@ -1,9 +1,10 @@
 import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import or_
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm.session import Session
 
 from ..models import Application
@@ -17,7 +18,9 @@ def acl_auth(
     user_id: UUID,
     user_group_id_list: List[UUID],
     resource_id: UUID,
-) -> Dict[data.HolderType, List[models.ResourcePermissionsEnum]]:
+) -> Tuple[
+    Dict[data.HolderType, List[models.ResourcePermissionsEnum]], models.Resource
+]:
     """
     Checks the authorization in ResourceHolderPermission model. If it represents
     a verified user or group user belongs to and generates dictionary with
@@ -33,6 +36,11 @@ def acl_auth(
             models.ResourceHolderPermission.user_id,
             models.ResourceHolderPermission.group_id,
             models.ResourceHolderPermission.permission,
+            models.Resource,
+        )
+        .join(
+            models.Resource,
+            models.ResourceHolderPermission.resource_id == models.Resource.id,
         )
         .filter(models.ResourceHolderPermission.resource_id == resource_id)
         .filter(
@@ -44,19 +52,19 @@ def acl_auth(
         .all()
     )
 
-    print(1, permissions)
-
     if not permissions:
         raise exceptions.PermissionsNotFound("No permissions for requested information")
 
     for permission in permissions:
-        # [0] - user_id, [1] - group_id, [2] - permission name
+        # [0] - user_id, [1] - group_id, [2] - permission name, [3] - resource
         if permission[0] is not None:
             acl[data.HolderType.user].append(permission[2])
         if permission[1] is not None:
             acl[data.HolderType.group].append(permission[2])
 
-    return acl
+    resource = permissions[0][3]
+
+    return acl, resource
 
 
 def acl_check(
@@ -101,15 +109,7 @@ def create_resource(
 ) -> models.Resource:
     """
     Create new resource and permissions for that resource.
-    Also attach current user to this permissions.
     """
-    resource = models.Resource(
-        application_id=application_id,
-        resource_data=resource_data,
-    )
-    db_session.add(resource)
-    db_session.commit()
-
     application: Application = (
         db_session.query(Application).filter(Application.id == application_id).first()
     )
@@ -118,6 +118,13 @@ def create_resource(
         raise exceptions.NotEnoughPermissions(
             "Not enough permissions to create resource"
         )
+
+    resource = models.Resource(
+        id=uuid4(),
+        application_id=application_id,
+        resource_data=resource_data,
+    )
+    db_session.add(resource)
 
     user_permission = models.ResourceHolderPermission(
         user_id=user_id,
@@ -185,27 +192,23 @@ def get_resource(db_session: Session, resource_id: UUID) -> models.Resource:
 
 def update_resource_data(
     db_session: Session,
-    resource_id: UUID,
+    resource: models.Resource,
     update_data: data.ResourceDataUpdateRequest,
 ) -> models.Resource:
     """
     Update resource data.
     """
-    query = db_session.query(models.Resource).filter(models.Resource.id == resource_id)
-    resource = query.one_or_none()
-    if resource is None:
-        raise exceptions.ResourceNotFound("Not found requested resource")
-
-    # Update existing data
     resource_data = dict(resource.resource_data)
     for key, value in update_data.update.items():
         resource_data[key] = value
+
     # Remove data by key
     for drop_key in update_data.drop_keys:
         try:
             del resource_data[drop_key]
         except Exception:
             pass
+
     resource.resource_data = resource_data
 
     db_session.commit()
@@ -213,71 +216,86 @@ def update_resource_data(
     return resource
 
 
-def delete_resource(db_session: Session, resource_id: UUID) -> models.Resource:
-    """
-    Delete resource by id.
-    """
-    query = db_session.query(models.Resource).filter(models.Resource.id == resource_id)
-    resource = query.one_or_none()
-    if resource is None:
-        raise exceptions.ResourceNotFound("Not found requested resource")
-
-    db_session.delete(resource)
-    db_session.commit()
-
-    return resource
-
-
-def add_holder_permissions(
+def update_holder_permissions(
+    method: data.UpdatePermissionsMethod,
     db_session: Session,
     resource_id: UUID,
     permissions_request: data.ResourcePermissionsRequest,
-) -> None:
+) -> data.ResourceHoldersListResponse:
     """
     Create list of permissions for holder in resource.
     If permission already exists, this permissions will be passed.
     """
-    holder_permissions_query = db_session.query(
-        models.ResourceHolderPermission.permission
+    existing_permissions_query = db_session.query(
+        models.ResourceHolderPermission
     ).filter(
         models.ResourceHolderPermission.resource_id == resource_id,
     )
     if permissions_request.holder_type == data.HolderType.user:
-        holder_permissions_query = holder_permissions_query.filter(
+        existing_permissions_query = existing_permissions_query.filter(
             models.ResourceHolderPermission.user_id == permissions_request.holder_id
         )
     elif permissions_request.holder_type == data.HolderType.group:
-        holder_permissions_query = holder_permissions_query.filter(
+        existing_permissions_query = existing_permissions_query.filter(
             models.ResourceHolderPermission.group_id == permissions_request.holder_id
         )
     else:
-        raise Exception(f"Unexpected holder_type: {permissions_request.holder_type}")
+        raise ValueError("Invalid holder type")
 
-    permissions_to_add_query = db_session.query(models.ResourceHolderPermission).filter(
-        models.ResourceHolderPermission.permission.in_(
-            [permission.value for permission in permissions_request.permissions]
-        ),
-        models.ResourceHolderPermission.permission.notin_(holder_permissions_query),
+    existing_permissions = []
+    existing_permissions_values = []
+    for p in existing_permissions_query.all():
+        existing_permissions.append(p)
+        existing_permissions_values.append(p.permission.value)
+
+    holder = data.ResourceHolderResponse(
+        id=permissions_request.holder_id,
+        holder_type=permissions_request.holder_type,
+        permissions=existing_permissions_values,
     )
 
-    new_permission = [
-        models.ResourceHolderPermission(
-            user_id=permissions_request.holder_id
-            if permissions_request.holder_type == data.HolderType.user
-            else None,
-            group_id=permissions_request.holder_id
-            if permissions_request.holder_type == data.HolderType.group
-            else None,
-            resource_id=resource_id,
-            permission=permission,
-        )
-        for permission in permissions_to_add_query.all()
-    ]
+    update_permissions: List[models.ResourceHolderPermission] = []
+    for permission in permissions_request.permissions:
+        if (
+            method == data.UpdatePermissionsMethod.ADD
+            and permission.value not in existing_permissions_values
+        ):
+            update_permissions.append(
+                models.ResourceHolderPermission(
+                    user_id=permissions_request.holder_id
+                    if permissions_request.holder_type == data.HolderType.user
+                    else None,
+                    group_id=permissions_request.holder_id
+                    if permissions_request.holder_type == data.HolderType.group
+                    else None,
+                    resource_id=resource_id,
+                    permission=permission.value,
+                )
+            )
+            holder.permissions.append(permission.value)
+        if (
+            method == data.UpdatePermissionsMethod.DELETE
+            and permission.value in existing_permissions_values
+        ):
+            update_permissions.append(
+                list(
+                    filter(lambda p: p.permission == permission, existing_permissions)
+                )[0]
+            )
+            holder.permissions.remove(permission)
 
-    db_session.add_all(new_permission)
+    if len(update_permissions) > 0:
+        if method == data.UpdatePermissionsMethod.ADD:
+            db_session.add_all(update_permissions)
+        elif method == data.UpdatePermissionsMethod.DELETE:
+            for p in update_permissions:
+                db_session.delete(p)
+        db_session.commit()
 
-    #TODO(kompotkot): WIP
-    # db_session.commit()
+    return data.ResourceHoldersListResponse(
+        resource_id=resource_id,
+        holders=[holder],
+    )
 
 
 def get_resource_holders_permissions(
@@ -337,42 +355,3 @@ def get_resource_holders_permissions(
     holders = user_holders + group_holders
 
     return data.ResourceHoldersListResponse(resource_id=resource_id, holders=holders)
-
-
-def delete_resource_holder_permissions(
-    db_session: Session,
-    resource_id: UUID,
-    permissions_request: data.ResourcePermissionsRequest,
-) -> None:
-    """
-    Delete holder permissions if they exist.
-    """
-    holder_permissions_query = db_session.query(models.ResourceHolderPermission).filter(
-        models.ResourceHolderPermission.resource_id == resource_id,
-    )
-    if permissions_request.holder_type == data.HolderType.user:
-        holder_permissions_query = holder_permissions_query.filter(
-            models.ResourceHolderPermission.user_id == permissions_request.holder_id
-        )
-    elif permissions_request.holder_type == data.HolderType.group:
-        holder_permissions_query = holder_permissions_query.filter(
-            models.ResourceHolderPermission.group_id == permissions_request.holder_id
-        )
-    else:
-        raise Exception(f"Unexpected holder_type: {permissions_request.holder_type}")
-
-    permissions_to_delete_query = holder_permissions_query.filter(
-        models.ResourceHolderPermission.permission.in_(
-            [permission.value for permission in permissions_request.permissions]
-        ),
-    )
-
-    permissions_to_delete = permissions_to_delete_query.all()
-    if len(permissions_to_delete) == 0:
-        raise exceptions.HolderPermissionsNotFound(
-            f"There is no permissions for provided holder with id: {permissions_request.holder_id}"
-        )
-
-    for delete_permission in permissions_to_delete:
-        db_session.delete(delete_permission)
-    db_session.commit()

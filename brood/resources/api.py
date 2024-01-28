@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 from uuid import UUID
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Path, Query, Request
@@ -53,7 +53,9 @@ def ensure_resource_permission(
     resource_id: UUID,
     required_scopes: Set[data.ResourcePermissions],
     user_groups_ids: List[UUID],
-) -> None:
+) -> Tuple[
+    Dict[data.HolderType, List[models.ResourcePermissionsEnum]], models.Resource
+]:
     """
     Checks if the given user (who is a member of the groups specified by user_groups_ids) holds the
     given permission on the resource specified by resource_id.
@@ -62,7 +64,7 @@ def ensure_resource_permission(
     otherwise.
     """
     try:
-        acl = actions.acl_auth(
+        acl, resource = actions.acl_auth(
             db_session=db_session,
             user_id=user_id,
             user_group_id_list=user_groups_ids,
@@ -77,9 +79,11 @@ def ensure_resource_permission(
         raise HTTPException(status_code=404)
     except Exception:
         logger.error(
-            f"Error checking permissions for user with id: {str(user_id)} in journal with id: {resource_id}"
+            f"Error checking permissions with id: {resource_id} for user with id: {str(user_id)}"
         )
         raise HTTPException(status_code=500)
+
+    return acl, resource
 
 
 @app.get("/version", response_model=VersionResponse)
@@ -155,13 +159,14 @@ async def get_resources_list_handler(
         del params["application_id"]
 
     try:
-        user_groups_ids = [group.group_id for group in current_user_with_groups.groups]
         resources = actions.get_list_of_resources(
-            db_session,
-            current_user_with_groups.id,
-            user_groups_ids,
-            params,
-            application_id,
+            db_session=db_session,
+            user_id=current_user_with_groups.id,
+            user_groups_ids=[
+                group.group_id for group in current_user_with_groups.groups
+            ],
+            params=params,
+            application_id=application_id,
         )
     except Exception as err:
         logger.error(f"Unhandled error in get_resources_list_handler: {str(err)}")
@@ -201,20 +206,13 @@ async def get_resource_handler(
             detail="Restricted tokens are not authorized to get resource.",
         )
 
-    ensure_resource_permission(
+    _, resource = ensure_resource_permission(
         db_session=db_session,
         user_id=current_user_with_groups.id,
         resource_id=resource_id,
         required_scopes={data.ResourcePermissions.any},
         user_groups_ids=[group.group_id for group in current_user_with_groups.groups],
     )
-    try:
-        resource = actions.get_resource(db_session, resource_id=resource_id)
-    except exceptions.ResourceNotFound:
-        raise HTTPException(status_code=404, detail="Resource not found")
-    except Exception as err:
-        logger.error(f"Unhandled error in get_resource_handler: {str(err)}")
-        raise HTTPException(status_code=500)
 
     return data.ResourceResponse(
         id=resource.id,
@@ -248,7 +246,7 @@ async def update_resource_handler(
             detail="Restricted tokens are not authorized to update resource.",
         )
 
-    ensure_resource_permission(
+    _, resource = ensure_resource_permission(
         db_session=db_session,
         user_id=current_user_with_groups.id,
         resource_id=resource_id,
@@ -258,7 +256,7 @@ async def update_resource_handler(
     try:
         updated_resource = actions.update_resource_data(
             db_session=db_session,
-            resource_id=resource_id,
+            resource=resource,
             update_data=update_data,
         )
     except exceptions.ResourceNotFound:
@@ -296,7 +294,7 @@ async def delete_resource_handler(
             detail="Restricted tokens are not authorized to delete resource.",
         )
 
-    ensure_resource_permission(
+    _, resource = ensure_resource_permission(
         db_session=db_session,
         user_id=current_user_with_groups.id,
         resource_id=resource_id,
@@ -304,9 +302,8 @@ async def delete_resource_handler(
         user_groups_ids=[group.group_id for group in current_user_with_groups.groups],
     )
     try:
-        resource = actions.delete_resource(db_session, resource_id)
-    except exceptions.ResourceNotFound:
-        raise HTTPException(status_code=404, detail="Resource not found")
+        db_session.delete(resource)
+        db_session.commit()
     except Exception as err:
         logger.error(f"Unhandled error in delete_resource_handler: {str(err)}")
         raise HTTPException(status_code=500)
@@ -348,7 +345,7 @@ async def add_resource_holder_permissions_handler(
             detail="Restricted tokens are not authorized to add resource holder permissions.",
         )
 
-    ensure_resource_permission(
+    _, resource = ensure_resource_permission(
         db_session=db_session,
         user_id=current_user_with_groups.id,
         resource_id=resource_id,
@@ -357,13 +354,12 @@ async def add_resource_holder_permissions_handler(
     )
 
     try:
-        resource = actions.get_resource(db_session, resource_id=resource_id)
-        actions.add_holder_permissions(db_session, resource.id, permissions_request)
-        holder_permissions = actions.get_resource_holders_permissions(
-            db_session, resource_id, permissions_request.holder_id
+        holder_permissions = actions.update_holder_permissions(
+            method=data.UpdatePermissionsMethod.ADD,
+            db_session=db_session,
+            resource_id=resource.id,
+            permissions_request=permissions_request,
         )
-    except exceptions.ResourceNotFound:
-        raise HTTPException(status_code=404, detail="Resource not found")
     except Exception as err:
         logger.error(
             f"Unhandled error in add_resource_holder_permissions_handler: {str(err)}"
@@ -399,7 +395,7 @@ async def get_resource_holders_permissions_handler(
             detail="Restricted tokens are not authorized to get resource holder permissions.",
         )
 
-    ensure_resource_permission(
+    _, resource = ensure_resource_permission(
         db_session=db_session,
         user_id=current_user_with_groups.id,
         resource_id=resource_id,
@@ -407,7 +403,6 @@ async def get_resource_holders_permissions_handler(
         user_groups_ids=[group.group_id for group in current_user_with_groups.groups],
     )
     try:
-        resource = actions.get_resource(db_session, resource_id=resource_id)
         resource_holders_permissions = actions.get_resource_holders_permissions(
             db_session, resource.id, holder_id=holder_id
         )
@@ -450,7 +445,7 @@ async def delete_resource_holder_permissions_handler(
             detail="Restricted tokens are not authorized to delete resource holder permissions.",
         )
 
-    ensure_resource_permission(
+    _, resource = ensure_resource_permission(
         db_session=db_session,
         user_id=current_user_with_groups.id,
         resource_id=resource_id,
@@ -459,18 +454,11 @@ async def delete_resource_holder_permissions_handler(
     )
 
     try:
-        resource = actions.get_resource(db_session, resource_id=resource_id)
-        actions.delete_resource_holder_permissions(
-            db_session, resource.id, permissions_request
-        )
-        holder_permissions = actions.get_resource_holders_permissions(
-            db_session, resource_id, permissions_request.holder_id
-        )
-    except exceptions.ResourceNotFound:
-        raise HTTPException(status_code=404, detail="Resource not found")
-    except exceptions.HolderPermissionsNotFound:
-        raise HTTPException(
-            status_code=404, detail="Holder does not have these permissions"
+        holder_permissions = actions.update_holder_permissions(
+            method=data.UpdatePermissionsMethod.DELETE,
+            db_session=db_session,
+            resource_id=resource.id,
+            permissions_request=permissions_request,
         )
     except Exception as err:
         logger.error(

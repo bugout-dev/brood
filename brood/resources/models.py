@@ -3,7 +3,7 @@ from enum import Enum, unique
 
 from sqlalchemy import Column, DateTime
 from sqlalchemy import Enum as PgEnum
-from sqlalchemy import ForeignKey, MetaData, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, MetaData, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -101,9 +101,7 @@ class ResourcePermission(Base):  # type: ignore
 
 class ResourceHolderPermission(Base):  # type: ignore
     __tablename__ = "resource_holder_permissions"
-    __table_args__ = (
-        UniqueConstraint("user_id", "group_id", "resource_id", "permission"),
-    )
+
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
@@ -133,6 +131,25 @@ class ResourceHolderPermission(Base):  # type: ignore
         server_default=utcnow(),
         onupdate=utcnow(),
         nullable=False,
+    )
+
+    __table_args__ = (
+        Index(
+            "uq_resource_holder_permissions_user_id_resource_id_permission",
+            "user_id",
+            "resource_id",
+            "permission",
+            unique=True,
+            postgresql_where=user_id.isnot(None),
+        ),
+        Index(
+            "uq_resource_holder_permissions_group_id_resource_id_permission",
+            "group_id",
+            "resource_id",
+            "permission",
+            unique=True,
+            postgresql_where=group_id.isnot(None),
+        ),
     )
 
     # SQLAlchemy relationships

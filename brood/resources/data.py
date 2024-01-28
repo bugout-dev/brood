@@ -8,6 +8,11 @@ from pydantic import BaseModel, Field
 from .models import ResourcePermissionsEnum
 
 
+class UpdatePermissionsMethod(Enum):
+    ADD = "add"
+    DELETE = "delete"
+
+
 class ResourcePermissions(Enum):
     """
     Extend of models.ResourcePermissionsEnum
