@@ -61,7 +61,7 @@ class ResourceDataUpdateRequest(BaseModel):
 class ResourceHolderResponse(BaseModel):
     id: UUID
     holder_type: HolderType
-    permissions: Optional[List[ResourcePermissionsEnum]] = Field(default_factory=list)
+    permissions: List[ResourcePermissionsEnum] = Field(default_factory=list)
 
 
 class ResourceHoldersListResponse(BaseModel):

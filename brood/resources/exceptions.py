@@ -1,3 +1,9 @@
+class ApplicationNotFound(Exception):
+    """
+    Raised when application with the given parameters is not found in the database.
+    """
+
+
 class ResourceNotFound(Exception):
     """
     Raised when resource with the given parameters is not found in the database.

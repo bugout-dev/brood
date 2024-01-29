@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
 from sqlalchemy import or_
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm.session import Session
 
 from ..models import Application
@@ -100,28 +99,33 @@ def acl_check(
         raise exceptions.PermissionsNotFound("No permissions for requested information")
 
 
+def verify_application_ownership(
+    db_session: Session,
+    application_id: UUID,
+) -> Application:
+    application: Optional[Application] = (
+        db_session.query(Application)
+        .filter(Application.id == application_id)
+        .one_or_none()
+    )
+    if application is None:
+        raise exceptions.ApplicationNotFound("Application not found")
+
+    return application
+
+
 def create_resource(
     db_session: Session,
     user_id: UUID,
-    application_id: UUID,
+    application: Application,
     resource_data: Dict[str, Any],
-    user_groups_ids: List[UUID],
 ) -> models.Resource:
     """
     Create new resource and permissions for that resource.
     """
-    application: Application = (
-        db_session.query(Application).filter(Application.id == application_id).first()
-    )
-
-    if application.group_id not in user_groups_ids:
-        raise exceptions.NotEnoughPermissions(
-            "Not enough permissions to create resource"
-        )
-
     resource = models.Resource(
         id=uuid4(),
-        application_id=application_id,
+        application_id=application.id,
         resource_data=resource_data,
     )
     db_session.add(resource)
@@ -272,7 +276,7 @@ def update_holder_permissions(
                     permission=permission.value,
                 )
             )
-            holder.permissions.append(permission.value)
+            holder.permissions.append(permission)
         if (
             method == data.UpdatePermissionsMethod.DELETE
             and permission.value in existing_permissions_values

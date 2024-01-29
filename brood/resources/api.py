@@ -6,7 +6,6 @@ from fastapi import Body, Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm.session import Session
 
-from .. import models as brood_models
 from ..data import UserWithGroupsResponse, VersionResponse
 from ..db import yield_db_read_only_session, yield_db_session_from_env
 from ..middleware import (
@@ -93,7 +92,7 @@ async def version() -> VersionResponse:
 
 @app.post("/", tags=["resources"], response_model=data.ResourceResponse)
 async def create_resource_handler(
-    data: data.ResourceCreationRequest = Body(...),
+    create_data: data.ResourceCreationRequest = Body(...),
     user_authorization_with_groups: Tuple[bool, UserWithGroupsResponse] = Depends(
         request_user_authorization_with_groups
     ),
@@ -101,9 +100,9 @@ async def create_resource_handler(
 ) -> data.ResourceResponse:
     """
     Create the resource.
-    Current user will inherit all permissions to the resource.
+    Current user will inherit admin permissions to the resource.
 
-    - **data** (dict):
+    - **create_data** (dict):
         - **application_id** (uuid)
         - **resource_data** (dict)
     """
@@ -115,16 +114,31 @@ async def create_resource_handler(
         )
 
     try:
-        user_groups_ids = [group.group_id for group in current_user_with_groups.groups]
+        application = actions.verify_application_ownership(
+            db_session=db_session,
+            application_id=create_data.application_id,
+        )
+    except exceptions.ApplicationNotFound:
+        raise HTTPException(status_code=404, detail="Not found")
+    except Exception as err:
+        logger.error(f"Unhandled error in create_resource_handler: {str(err)}")
+        raise HTTPException(status_code=500)
+
+    if application.group_id not in [
+        group.group_id for group in current_user_with_groups.groups
+    ]:
+        logger.info(
+            f"User with ID: {str(current_user_with_groups.id)} does not have enough permissions to create resource in application with ID: {str(application.id)}"
+        )
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    try:
         resource = actions.create_resource(
             db_session=db_session,
             user_id=current_user_with_groups.id,
-            application_id=data.application_id,
-            resource_data=data.resource_data,
-            user_groups_ids=user_groups_ids,
+            application=application,
+            resource_data=create_data.resource_data,
         )
-    except exceptions.NotEnoughPermissions:
-        raise HTTPException(status_code=403, detail="Forbidden")
     except Exception as err:
         logger.error(f"Unhandled error in create_resource_handler: {str(err)}")
         raise HTTPException(status_code=500)

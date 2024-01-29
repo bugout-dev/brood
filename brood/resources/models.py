@@ -3,7 +3,7 @@ from enum import Enum, unique
 
 from sqlalchemy import Column, DateTime
 from sqlalchemy import Enum as PgEnum
-from sqlalchemy import ForeignKey, Index, MetaData, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, MetaData, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
