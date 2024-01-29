@@ -5,13 +5,27 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from .models import ResourcePermissionsEnum
+
+
+class UpdatePermissionsMethod(Enum):
+    ADD = "add"
+    DELETE = "delete"
+
 
 class ResourcePermissions(Enum):
-    ADMIN = "admin"
-    CREATE = "create"
-    READ = "read"
-    UPDATE = "update"
-    DELETE = "delete"
+    """
+    Extend of models.ResourcePermissionsEnum
+    """
+
+    admin = "admin"
+    create = "create"
+    read = "read"
+    update = "update"
+    delete = "delete"
+
+    # Extended methods
+    any = "any"
 
 
 class HolderType(Enum):
@@ -47,7 +61,7 @@ class ResourceDataUpdateRequest(BaseModel):
 class ResourceHolderResponse(BaseModel):
     id: UUID
     holder_type: HolderType
-    permissions: Optional[List[ResourcePermissions]] = Field(default_factory=list)
+    permissions: List[ResourcePermissionsEnum] = Field(default_factory=list)
 
 
 class ResourceHoldersListResponse(BaseModel):
@@ -58,4 +72,4 @@ class ResourceHoldersListResponse(BaseModel):
 class ResourcePermissionsRequest(BaseModel):
     holder_id: UUID
     holder_type: HolderType
-    permissions: List[ResourcePermissions] = Field(default_factory=list)
+    permissions: List[ResourcePermissionsEnum] = Field(default_factory=list)
