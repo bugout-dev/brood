@@ -1,18 +1,14 @@
 import uuid
+from enum import Enum, unique
 
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import (
-    Column,
-    DateTime,
-    ForeignKey,
-    String,
-    MetaData,
-    UniqueConstraint,
-)
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, DateTime
+from sqlalchemy import Enum as PgEnum
+from sqlalchemy import ForeignKey, Index, MetaData, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
-from ..models import utcnow, User, Group, Application
+from ..models import Application, Group, User, utcnow
 
 """
 Naming conventions doc
@@ -27,6 +23,20 @@ convention = {
 }
 metadata = MetaData(naming_convention=convention)
 Base = declarative_base(metadata=metadata)
+
+
+@unique
+class ResourcePermissionsEnum(Enum):
+    """
+    Admin able to modify resources and it's permissions.
+    Create, Read, Update, Delete - ephemeral permissions for internal application usage.
+    """
+
+    admin = "admin"
+    create = "create"
+    read = "read"
+    update = "update"
+    delete = "delete"
 
 
 class Resource(Base):  # type: ignore
@@ -61,8 +71,8 @@ class Resource(Base):  # type: ignore
     )
 
     # SQLAlchemy relationships
-    permissions = relationship(
-        "ResourcePermission",
+    holders = relationship(
+        "ResourceHolderPermission",
         back_populates="resource",
         cascade="all, delete, delete-orphan",
     )
@@ -88,15 +98,10 @@ class ResourcePermission(Base):  # type: ignore
     )
     permission = Column(String, nullable=False)
 
-    # SQLAlchemy relationships
-    resource = relationship("Resource", back_populates="permissions")
-
 
 class ResourceHolderPermission(Base):  # type: ignore
     __tablename__ = "resource_holder_permissions"
-    __table_args__ = (
-        UniqueConstraint("user_id", "group_id", "resource_id", "permission_id"),
-    )
+
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
@@ -114,9 +119,9 @@ class ResourceHolderPermission(Base):  # type: ignore
         UUID(as_uuid=True),
         ForeignKey("resources.id", ondelete="CASCADE"),
     )
-    permission_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("resource_permissions.id", ondelete="CASCADE"),
+    permission = Column(
+        PgEnum(ResourcePermissionsEnum, name="resource_permissions_enum"),
+        nullable=False,
     )
     created_at = Column(
         DateTime(timezone=True), server_default=utcnow(), nullable=False
@@ -127,3 +132,25 @@ class ResourceHolderPermission(Base):  # type: ignore
         onupdate=utcnow(),
         nullable=False,
     )
+
+    __table_args__ = (
+        Index(
+            "uq_resource_holder_permissions_user_id_resource_id_permission",
+            "user_id",
+            "resource_id",
+            "permission",
+            unique=True,
+            postgresql_where=user_id.isnot(None),
+        ),
+        Index(
+            "uq_resource_holder_permissions_group_id_resource_id_permission",
+            "group_id",
+            "resource_id",
+            "permission",
+            unique=True,
+            postgresql_where=group_id.isnot(None),
+        ),
+    )
+
+    # SQLAlchemy relationships
+    resource = relationship("Resource", back_populates="holders")

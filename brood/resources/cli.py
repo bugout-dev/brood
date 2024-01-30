@@ -4,8 +4,8 @@ Brood resources CLI
 import argparse
 import json
 
-from .models import Resource
 from ..db import SessionLocal
+from .models import Resource
 
 
 def resources_list_handler(args: argparse.Namespace) -> None:
