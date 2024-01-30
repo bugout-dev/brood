@@ -78,27 +78,6 @@ class Resource(Base):  # type: ignore
     )
 
 
-class ResourcePermission(Base):  # type: ignore
-    """
-    Describe available permissions for provided resource.
-    """
-
-    __tablename__ = "resource_permissions"
-
-    id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        unique=True,
-        nullable=False,
-    )
-    resource_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("resources.id", ondelete="CASCADE"),
-    )
-    permission = Column(String, nullable=False)
-
-
 class ResourceHolderPermission(Base):  # type: ignore
     __tablename__ = "resource_holder_permissions"
 
