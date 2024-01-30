@@ -1019,6 +1019,7 @@ async def set_user_in_group_handler(
     user_type: models.Role = Form(...),
     username: Optional[str] = Form(None),
     email: Optional[str] = Form(None),
+    application_id: Optional[uuid.UUID] = Form(None),
     db_session=Depends(yield_db_session_from_env),
 ) -> data.GroupUserResponse:
     """
@@ -1027,6 +1028,7 @@ async def set_user_in_group_handler(
     - **group_id** (uuid): Group ID
     - **user_type** (string): Required user permission in group
     - **username** (string): User name
+    - **application_id** (string): Application ID
     - **email** (string): User email
     """
     is_token_restricted, current_user = user_authorization
@@ -1055,6 +1057,7 @@ async def set_user_in_group_handler(
             user_type=user_type.value,
             username=username,
             email=email,
+            application_id=application_id,
         )
     except actions.LackOfUserSpace:
         raise HTTPException(
