@@ -534,6 +534,9 @@ def get_user_query(
             "In order to get user, at least one of username, email, user_id or web3_address must be specified"
         )
 
+    if user_id is not None:
+        return query.filter(User.id == user_id)
+
     query = query.filter(User.application_id == application_id)
 
     if username is not None:
@@ -545,9 +548,6 @@ def get_user_query(
     if email is not None:
         normalized_email = normalize_email(email)
         query = query.filter(User.normalized_email == normalized_email)
-
-    if user_id is not None:
-        query = query.filter(User.id == user_id)
 
     if web3_address is not None:
         query = query.filter(User.web3_address == web3_address)
