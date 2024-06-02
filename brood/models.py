@@ -204,6 +204,12 @@ class Token(Base):  # type: ignore
     created_at = Column(
         DateTime(timezone=True), server_default=utcnow(), nullable=False
     )
+    touched_at = Column(
+        DateTime(timezone=True),
+        server_default=utcnow(),
+        onupdate=utcnow(),
+        nullable=False,
+    )
     updated_at = Column(
         DateTime(timezone=True),
         server_default=utcnow(),
