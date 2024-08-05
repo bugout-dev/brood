@@ -1974,6 +1974,12 @@ async def create_application_handler(
             detail="Restricted tokens are not authorized to create applications.",
         )
 
+    if current_user.application_id is not None:
+        raise HTTPException(
+            status_code=403,
+            detail="Application users are not authorized to create applications.",
+        )
+
     try:
         # Check user permissions
         actions.check_user_type_in_group(
